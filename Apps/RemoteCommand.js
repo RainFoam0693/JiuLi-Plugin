@@ -133,7 +133,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
     const yunzaiInfo = getYunzaiVersion()
 
-    const img = await puppeteer.screenshots("Code", { tplFile, htmlDir, Code, multiPageHeight: 20000 ,cmd: cmd, version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name })
+    const img = await puppeteer.screenshots("Code", { tplFile, htmlDir, Code, multiPageHeight: 20000 ,cmd: cmd, version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3 })
     return this.reply(img, true)
   }
 
@@ -173,7 +173,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
     const yunzaiInfo = getYunzaiVersion()
 
-    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: cmd, version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name })
+    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: cmd, version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3 })
     return this.reply(img, true)
   }
 
@@ -194,7 +194,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
     if (Code.length) {
       Code = await ansi_up.ansi_to_html(Code.join("\n\n"))
-      const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code })
+      const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, deviceScaleFactor: 3 })
       this.reply(img, true)
     }
     return rets
