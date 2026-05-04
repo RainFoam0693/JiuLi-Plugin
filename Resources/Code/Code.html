@@ -280,16 +280,19 @@
         .output-box::after {
             content: "";
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: linear-gradient(135deg, #0d1117 0%, #1a3a2a 50%, #0d1117 100%);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        {{if bgAvailable}}
+        .output-box::after {
             background-image: url('https://t.alcy.cc/mp');
             background-size: cover;
             background-position: center;
             opacity: 0.25;
-            pointer-events: none;
         }
+        {{/if}}
 
         /* Box output (for sc script) */
         .box {
@@ -406,6 +409,7 @@
         .ansi-yellow-fg { color: var(--neon-yellow) !important; }
         .ansi-bright-green-fg { color: var(--neon-green) !important; text-shadow: 0 0 5px var(--neon-green); }
     </style>
+    {{@extraStyle}}
 </head>
 <body>
     <div class="scanlines"></div>
@@ -468,7 +472,7 @@
                 <div class="section-label">Output Log</div>
                 <div class="section-line"></div>
             </div>
-            <div class="output-box">
+            <div class="output-box{{if !bgAvailable}} no-bg{{/if}}">
                 <div class="output-content">{{@Code}}</div>
             </div>
         </div>

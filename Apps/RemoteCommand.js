@@ -24,6 +24,23 @@ function getYunzaiVersion() {
   return { name: 'Yunzai', version: '3.1.7' }
 }
 
+// 检测背景API是否可用（重试3次）
+async function checkBgAvailable(url = 'https://t.alcy.cc/mp', retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 3000)
+      const response = await fetch(url, { signal: controller.signal })
+      clearTimeout(timeout)
+      if (response.ok && response.headers.get('content-type')?.includes('image')) {
+        return true
+      }
+    } catch (e) {}
+    if (i < retries - 1) await new Promise(r => setTimeout(r, 500))
+  }
+  return false
+}
+
 let prompt = cmd => [`echo "[$USER@$HOSTNAME $PWD]$([ "$UID" = 0 ]&&echo "#"||echo "$") ";${cmd}`]
 let inspectCmd = (cmd, data) => data.includes("\n") ?
   data.replace(/ ?\n/, ` ${cmd}\n`) : `${data} ${cmd}`
@@ -132,8 +149,9 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
     Code = await ansi_up.ansi_to_html(Code.join("\n\n"))
 
     const yunzaiInfo = getYunzaiVersion()
+    const bgAvailable = await checkBgAvailable()
 
-    const img = await puppeteer.screenshots("Code", { tplFile, htmlDir, Code, multiPageHeight: 20000 ,cmd: cmd, version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3 })
+    const img = await puppeteer.screenshots("Code", { tplFile, htmlDir, Code, multiPageHeight: 20000 ,cmd: cmd, version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable })
     return this.reply(img, true)
   }
 
@@ -172,8 +190,9 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
     Code = inspectCmd(hljs.highlight(cmd, { language: langCmd }).value, Code)
 
     const yunzaiInfo = getYunzaiVersion()
+    const bgAvailable = await checkBgAvailable()
 
-    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: cmd, version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3 })
+    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: cmd, version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable })
     return this.reply(img, true)
   }
 

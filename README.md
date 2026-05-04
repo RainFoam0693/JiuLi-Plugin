@@ -4,7 +4,7 @@
 
 ## 安装教程
 
-1. 准备：[TRSS-Yunzai](https://github.com/TimeRainStarSky/Yunzai) & [Miao-Yunzai](https://gitee.com/yoimiya-kokomi/Miao-Yunzai)
+1. 准备：[Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)
 
 2. 安装：
 
@@ -118,6 +118,12 @@ bash server.sh [端口]
 
 </details>
 
+<details><summary>米哈游登录</summary>
+
+- 二维码登录：米哈游登录
+- 账号密码登录：米哈游登录 + `账号`
+
+</details>
 
 <details><summary>Markdown（权限：主人）</summary>
 
