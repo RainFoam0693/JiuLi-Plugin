@@ -151,7 +151,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
     const yunzaiInfo = getYunzaiVersion()
     const bgAvailable = await checkBgAvailable()
 
-    const img = await puppeteer.screenshots("Code", { tplFile, htmlDir, Code, multiPageHeight: 20000 ,cmd: cmd, version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable })
+    const img = await puppeteer.screenshots("Code", { tplFile, htmlDir, Code, multiPageHeight: 20000 ,cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable })
     return this.reply(img, true)
   }
 
@@ -192,7 +192,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
     const yunzaiInfo = getYunzaiVersion()
     const bgAvailable = await checkBgAvailable()
 
-    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: cmd, version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable })
+    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable })
     return this.reply(img, true)
   }
 
