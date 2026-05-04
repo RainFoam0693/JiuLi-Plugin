@@ -118,12 +118,6 @@ bash server.sh [端口]
 
 </details>
 
-<details><summary>米哈游登录</summary>
-
-- 二维码登录：米哈游登录
-- 账号密码登录：米哈游登录 + `账号`
-
-</details>
 
 <details><summary>Markdown（权限：主人）</summary>
 
