@@ -4,7 +4,7 @@
 
 ## 安装教程
 
-1. 准备：[Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)
+1. 准备：[TRSS-Yunzai](https://github.com/TimeRainStarSky/Yunzai) & [Miao-Yunzai](https://gitee.com/yoimiya-kokomi/Miao-Yunzai)
 
 2. 安装：
 
