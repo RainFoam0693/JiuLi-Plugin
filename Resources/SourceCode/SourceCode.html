@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRSS // Source Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <style>
+        :root {
+            --bg-main: #0a0e14;
+            --card-bg: #0d1117;
+            --neon-green: #00ff9f;
+            --neon-cyan: #00d4ff;
+            --neon-purple: #bd93f9;
+            --text-primary: #e2e2e2;
+            --text-dim: #6272a4;
+            --border-glow: rgba(0, 255, 159, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            width: fit-content;
+            min-width: 850px;
+            max-width: 1200px;
+            background: var(--bg-main);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        /* Scanline Overlay */
+        .scanlines {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 100;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0) 0px,
+                rgba(0, 0, 0, 0) 2px,
+                rgba(0, 0, 0, 0.02) 2px,
+                rgba(0, 0, 0, 0.02) 4px
+            );
+        }
+
+        /* Main Card */
+        .main-card {
+            position: relative;
+            z-index: 10;
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+            min-height: 100vh;
+            border: 1px solid var(--border-glow);
+            box-shadow: 
+                inset 0 0 80px rgba(0, 255, 159, 0.02),
+                0 0 50px rgba(0, 255, 159, 0.05);
+        }
+
+        /* Corner Decorations */
+        .corner {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            border-color: var(--neon-green);
+            border-style: solid;
+            border-width: 0;
+        }
+        .corner-tl { top: 12px; left: 12px; border-top-width: 2px; border-left-width: 2px; }
+        .corner-tr { top: 12px; right: 12px; border-top-width: 2px; border-right-width: 2px; }
+        .corner-bl { bottom: 12px; left: 12px; border-bottom-width: 2px; border-left-width: 2px; }
+        .corner-br { bottom: 12px; right: 12px; border-bottom-width: 2px; border-right-width: 2px; }
+
+        /* Header */
+        .window-header {
+            background: rgba(0, 255, 159, 0.03);
+            padding: 18px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(0, 255, 159, 0.1);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 255, 159, 0.08);
+            border: 1px solid rgba(0, 255, 159, 0.25);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--neon-green);
+            font-size: 16px;
+            text-shadow: 0 0 15px var(--neon-green);
+        }
+
+        .title-text h1 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+        .title-text h1 .accent { color: var(--neon-green); }
+        .title-text .subtitle {
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            margin-top: 3px;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .window-controls { display: flex; gap: 8px; }
+        .control { width: 12px; height: 12px; border-radius: 50%; }
+        .red { background: #ff5f56; box-shadow: 0 0 8px rgba(255, 95, 86, 0.5); }
+        .yellow { background: #ffbd2e; box-shadow: 0 0 8px rgba(255, 189, 46, 0.5); }
+        .green { background: #27c93f; box-shadow: 0 0 8px rgba(39, 201, 63, 0.5); }
+
+        .file-suffix-badge {
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: var(--neon-cyan);
+            padding: 4px 14px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        /* Code Area */
+        .code-container {
+            padding: 25px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .code-wrapper {
+            border: 1px solid rgba(0, 255, 159, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.4);
+            position: relative;
+        }
+
+        .code-wrapper::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('https://t.alcy.cc/mp');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.25;
+            pointer-events: none;
+            border-radius: 8px;
+        }
+
+        pre { margin: 0; }
+        code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
+            font-size: 14px !important;
+            line-height: 1.65 !important;
+            background: transparent !important;
+            color: var(--text-primary) !important;
+            text-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
+        }
+
+        /* Line Numbers */
+        .hljs-ln-numbers {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            text-align: right;
+            color: rgba(0, 255, 159, 0.3) !important;
+            vertical-align: top;
+            padding-right: 18px !important;
+            padding-left: 18px !important;
+            border-right: 1px solid rgba(0, 255, 159, 0.15) !important;
+            text-shadow: 0 0 8px rgba(0, 255, 159, 0.3) !important;
+            font-size: 13px !important;
+        }
+        .hljs-ln-code {
+            padding-left: 20px !important;
+        }
+        .hljs-ln tr:hover {
+            background: rgba(0, 255, 159, 0.03) !important;
+        }
+
+        /* VS Code Syntax Colors */
+        .hljs {
+            background: transparent !important;
+        }
+
+        /* Bottom Bar */
+        .footer {
+            padding: 15px 25px;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid rgba(0, 255, 159, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .footer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-item .icon {
+            color: var(--neon-green);
+            font-weight: bold;
+        }
+
+        .footer-item .value {
+            color: var(--neon-cyan);
+        }
+
+        .footer-right {
+            letter-spacing: 2px;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .status-indicator .dot {
+            width: 6px;
+            height: 6px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 8px var(--neon-green);
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    <div class="main-card">
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+
+        <header class="window-header">
+            <div class="header-left">
+                <div class="logo-icon">{}</div>
+                <div class="title-text">
+                    <h1>SOURCE <span class="accent">//</span> VIEWER</h1>
+                    <div class="subtitle">TRSS-Plugin Code Analyzer</div>
+                </div>
+            </div>
+            <div class="file-info">
+                <div class="window-controls">
+                    <div class="control red"></div>
+                    <div class="control yellow"></div>
+                    <div class="control green"></div>
+                </div>
+                <span class="file-suffix-badge">{{fileSuffix}}</span>
+            </div>
+        </header>
+
+        <div class="code-container">
+            <div class="code-wrapper">
+                <pre><code class="hljs" data-ln-start-from="{{lnStart}}">{{@SourceCode}}</code></pre>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="footer-left">
+                <div class="footer-item">
+                    <span class="icon">&lt;/&gt;</span>
+                    <span>TRSS-Plugin</span>
+                </div>
+                <div class="footer-item">
+                    <span class="value">{{fileSuffix}}</span>
+                    <span>FILE</span>
+                </div>
+                <div class="status-indicator">
+                    <span class="dot"></span>
+                    <span>READY</span>
+                </div>
+            </div>
+            <div class="footer-right">
+                LINE START: <span class="value">{{lnStart}}</span> &bull; CST+8
+            </div>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
+    <script>
+        const suffix = '{{fileSuffix}}';
+        if (hljs.getLanguage(suffix)) {
+            document.querySelector('code').classList.add('language-' + suffix);
+        }
+        
+        hljs.highlightAll();
+        hljs.initLineNumbersOnLoad();
+    </script>
+</body>
+</html>

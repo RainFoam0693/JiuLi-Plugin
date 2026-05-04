@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRSS // Terminal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/tokyo-night-dark.min.css">
+    <style>
+        :root {
+            --bg-main: #0a0e14;
+            --card-bg: #0d1117;
+            --neon-green: #00ff9f;
+            --neon-cyan: #00d4ff;
+            --neon-purple: #bd93f9;
+            --neon-red: #ff5555;
+            --neon-yellow: #f1fa8c;
+            --text-primary: #e2e2e2;
+            --text-dim: #6272a4;
+            --output-color: #00d4ff;
+            --border-glow: rgba(0, 255, 159, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            width: 900px;
+            background: var(--bg-main);
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        /* Scanline Effect */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0) 0px,
+                rgba(0, 0, 0, 0) 2px,
+                rgba(0, 0, 0, 0.03) 2px,
+                rgba(0, 0, 0, 0.03) 4px
+            );
+        }
+
+        /* Main Container */
+        .main-card {
+            position: relative;
+            z-index: 10;
+            background: rgba(10, 14, 20, 0.85);
+            backdrop-filter: blur(10px);
+            min-height: 100vh;
+            padding: 40px;
+            border: 1px solid rgba(0, 255, 159, 0.1);
+            box-shadow: 
+                inset 0 0 100px rgba(0, 255, 159, 0.02),
+                0 0 60px rgba(0, 255, 159, 0.05);
+        }
+
+        /* Corner Decorations */
+        .corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: var(--neon-green);
+            border-style: solid;
+            border-width: 0;
+        }
+        .corner-tl { top: 15px; left: 15px; border-top-width: 2px; border-left-width: 2px; }
+        .corner-tr { top: 15px; right: 15px; border-top-width: 2px; border-right-width: 2px; }
+        .corner-bl { bottom: 15px; left: 15px; border-bottom-width: 2px; border-left-width: 2px; }
+        .corner-br { bottom: 15px; right: 15px; border-bottom-width: 2px; border-right-width: 2px; }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 35px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid rgba(0, 255, 159, 0.1);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-icon {
+            width: 55px;
+            height: 55px;
+            background: linear-gradient(135deg, rgba(0, 255, 159, 0.1) 0%, transparent 100%);
+            border: 1px solid rgba(0, 255, 159, 0.3);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 22px;
+            color: var(--neon-green);
+            text-shadow: 0 0 20px var(--neon-green);
+            box-shadow: 
+                0 0 20px rgba(0, 255, 159, 0.1),
+                inset 0 0 20px rgba(0, 255, 159, 0.05);
+        }
+
+        .logo-text h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+        .logo-text h1 .accent { color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
+        .logo-text .version {
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: 3px;
+            margin-top: 6px;
+        }
+
+        .status-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 12px;
+        }
+
+        .status-row {
+            display: flex;
+            gap: 25px;
+        }
+
+        .status-item {
+            text-align: right;
+        }
+        .status-item .label {
+            font-size: 9px;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .status-item .value {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--neon-cyan);
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 16px;
+            background: rgba(0, 255, 159, 0.05);
+            border: 1px solid rgba(0, 255, 159, 0.2);
+            border-radius: 4px;
+        }
+        .status-badge .dot {
+            width: 8px;
+            height: 8px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+        .status-badge .text {
+            font-size: 12px;
+            color: var(--neon-green);
+            letter-spacing: 3px;
+            font-weight: bold;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* Terminal Window Style */
+        .terminal-window {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 255, 159, 0.15);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+
+        .terminal-header {
+            background: rgba(0, 255, 159, 0.05);
+            padding: 12px 18px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid rgba(0, 255, 159, 0.1);
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 8px;
+        }
+        .terminal-dots span {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        .terminal-dots .red { background: #ff5f56; box-shadow: 0 0 8px rgba(255, 95, 86, 0.5); }
+        .terminal-dots .yellow { background: #ffbd2e; box-shadow: 0 0 8px rgba(255, 189, 46, 0.5); }
+        .terminal-dots .green { background: #27ca40; box-shadow: 0 0 8px rgba(39, 202, 64, 0.5); }
+
+        .terminal-title {
+            flex: 1;
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+        }
+
+        .terminal-body {
+            padding: 20px;
+        }
+
+        .command-line {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .prompt-user { color: var(--neon-green); font-weight: bold; }
+        .prompt-at { color: var(--text-dim); }
+        .prompt-host { color: var(--neon-cyan); }
+        .prompt-path { color: var(--neon-purple); }
+        .prompt-symbol { color: var(--neon-green); margin-left: 4px; }
+        .command-text { color: var(--text-primary); flex: 1; }
+
+        /* Output Section */
+        .output-section {
+            margin-top: 25px;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 18px;
+        }
+        .section-label {
+            font-size: 11px;
+            color: var(--neon-green);
+            letter-spacing: 3px;
+            font-weight: bold;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-label::before {
+            content: "//";
+            color: var(--text-dim);
+        }
+        .section-line {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(0, 255, 159, 0.3) 0%, transparent 100%);
+        }
+
+        .output-box {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 255, 159, 0.1);
+            border-radius: 6px;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .output-box::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('https://t.alcy.cc/mp');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.25;
+            pointer-events: none;
+        }
+
+        /* Box output (for sc script) */
+        .box {
+            padding: 10px;
+            background: rgba(13, 13, 13, 0.85);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(19px);
+            -webkit-backdrop-filter: blur(19px);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            font-family: Inconsolata, monospace;
+            color: #fff;
+            position: relative;
+        }
+
+        .box::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('https://t.alcy.cc/mp');
+            background-size: cover;
+            background-position: center;
+            opacity: 0.2;
+            pointer-events: none;
+            border-radius: 10px;
+        }
+
+        .output-box::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--neon-green), transparent);
+            opacity: 0.5;
+        }
+
+        .output-content {
+            color: var(--output-color);
+            font-size: 15px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+            text-shadow: 0 0 8px rgba(0, 212, 255, 0.4);
+        }
+
+        /* Cursor Blink */
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 18px;
+            background: var(--neon-green);
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 4px;
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Footer */
+        .footer {
+            margin-top: 35px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(0, 255, 159, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .footer-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+        .footer-item .icon {
+            color: var(--neon-purple);
+        }
+        .footer-item .value {
+            color: var(--neon-cyan);
+        }
+
+        .footer-right {
+            font-size: 10px;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+        }
+
+        /* Glitch Effect on Hover (optional) */
+        .glitch {
+            position: relative;
+        }
+
+        /* ANSI Color Overrides */
+        pre, code { background: transparent !important; font-family: inherit !important; }
+        .ansi-green-fg { color: var(--neon-green) !important; }
+        .ansi-cyan-fg { color: var(--neon-cyan) !important; }
+        .ansi-red-fg { color: var(--neon-red) !important; }
+        .ansi-yellow-fg { color: var(--neon-yellow) !important; }
+        .ansi-bright-green-fg { color: var(--neon-green) !important; text-shadow: 0 0 5px var(--neon-green); }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+    
+    <div class="main-card">
+        <div class="corner corner-tl"></div>
+        <div class="corner corner-tr"></div>
+        <div class="corner corner-bl"></div>
+        <div class="corner corner-br"></div>
+
+        <header class="header">
+            <div class="logo-section">
+                <div class="logo-icon">>_</div>
+                <div class="logo-text">
+                    <h1>TRSS <span class="accent">//</span> EXEC</h1>
+                    <div class="version">REMOTE COMMAND TERMINAL {{@yunzai_name}} v{{@yunzai_version}}</div>
+                </div>
+            </div>
+            <div class="status-panel">
+                <div class="status-row">
+                    <div class="status-item">
+                        <div class="label">System Time</div>
+                        <div class="value" id="current-time">--:--:--</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="label">Status</div>
+                        <div class="value">200 OK</div>
+                    </div>
+                </div>
+                <div class="status-badge">
+                    <span class="dot"></span>
+                    <span class="text">ONLINE</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="terminal-window">
+            <div class="terminal-header">
+                <div class="terminal-dots">
+                    <span class="red"></span>
+                    <span class="yellow"></span>
+                    <span class="green"></span>
+                </div>
+                <div class="terminal-title">root@trss — bash — 120×30</div>
+            </div>
+            <div class="terminal-body">
+                <div class="command-line">
+                    <span class="prompt-user">root</span>
+                    <span class="prompt-at">@</span>
+                    <span class="prompt-host">trss</span>
+                    <span class="prompt-path">~/</span>
+                    <span class="prompt-symbol">#</span>
+                    <span class="command-text">{{@cmd}}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="output-section">
+            <div class="section-header">
+                <div class="section-label">Output Log</div>
+                <div class="section-line"></div>
+            </div>
+            <div class="output-box">
+                <div class="output-content">{{@Code}}</div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <div class="footer-left">
+                <div class="footer-item">
+                    <span class="icon">[~]</span>
+                    <span>{{@yunzai_name}} {{@yunzai_version}}</span>
+                    <span class="value">& TRSS-Plugin v3.0.0</span>
+                </div>
+                <div class="footer-item">
+                    <span class="icon">[@]</span>
+                    <span>Powered by OpenClaw</span>
+                </div>
+            </div>
+            <div class="footer-right">CST+8 // {{@current_date}}</div>
+        </footer>
+    </div>
+
+    <script>
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toTimeString().split(' ')[0];
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+    </script>
+</body>
+</html>
