@@ -6,6 +6,23 @@ import puppeteer from "../../../lib/puppeteer/puppeteer.js"
 const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/SourceCode/`
 const tplFile = `${htmlDir}SourceCode.html`
 
+// 检测背景API是否可用（重试3次）
+async function checkBgAvailable(url = 'https://t.alcy.cc/mp', retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 3000)
+      const response = await fetch(url, { signal: controller.signal })
+      clearTimeout(timeout)
+      if (response.ok && response.headers.get('content-type')?.includes('image')) {
+        return true
+      }
+    } catch (e) {}
+    if (i < retries - 1) await new Promise(r => setTimeout(r, 500))
+  }
+  return false
+}
+
 export class SourceCode extends plugin {
   constructor() {
     super({
@@ -56,10 +73,12 @@ export class SourceCode extends plugin {
       .replace(/'/g, "&#39;")
       .replace(/ /g, "&nbsp;")
     const fileSuffix = path.extname(scFile).slice(1)
+    const bgAvailable = await checkBgAvailable()
     const img = await puppeteer.screenshots("SourceCode", {
       tplFile, htmlDir, SourceCode, fileSuffix,
       lnStart: (rows && rows[0]) || 1,
-      multiPageHeight: 20000
+      multiPageHeight: 20000,
+      bgAvailable
     })
 
     await this.reply(img, true)
