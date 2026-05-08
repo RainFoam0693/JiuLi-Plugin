@@ -41,15 +41,51 @@
             padding: 30px;
             color: var(--text-main);
         }
+        body.custom-bg {
+            background-image: url('{{background}}');
+            background-size: cover;
+            background-position: center;
+        }
+        body.custom-bg::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(13, 17, 23, 0.85);
+            pointer-events: none;
+            z-index: -1;
+        }
 
         .main-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-dim);
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 24px;
             padding: 40px;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+        }
+
+        .main-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            z-index: 10;
+        }
+
+        .main-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.08) 0%, transparent 50%);
+            pointer-events: none;
         }
 
         /* 装饰性水印与头部 */
@@ -175,7 +211,7 @@
         .footer-info { color: var(--accent-cyan); font-weight: bold; }
     </style>
 </head>
-<body>
+<body{{if background}} class="custom-bg"{{/if}}>
     <div class="main-card">
         <div class="watermark">DOCS</div>
 
