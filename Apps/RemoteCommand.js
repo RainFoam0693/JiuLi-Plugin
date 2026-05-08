@@ -24,21 +24,41 @@ function getYunzaiVersion() {
   return { name: 'Yunzai', version: '3.1.7' }
 }
 
-// 检测背景API是否可用（重试3次）
-async function checkBgAvailable(url = 'https://t.alcy.cc/mp', retries = 3) {
-  for (let i = 0; i < retries; i++) {
+// 背景图获取（yenai state 逻辑：远程优先，失败用本地 fallback）
+function getLocalBg() {
+  const bgDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/bg`
+  if (fs.existsSync(bgDir)) {
+    const files = fs.readdirSync(bgDir).filter(f => f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.jpeg') || f.endsWith('.webp'))
+    if (files.length > 0) {
+      const file = files[Math.floor(Math.random() * files.length)]
+      const buffer = fs.readFileSync(path.join(bgDir, file))
+      const ext = file.split('.').pop()
+      const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg'
+      return `data:${mime};base64,${buffer.toString('base64')}`
+    }
+  }
+  return ''
+}
+
+async function getBgData() {
+  const remoteUrl = 'https://t.alcy.cc/mp'
+  for (let i = 0; i < 3; i++) {
     try {
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 3000)
-      const response = await fetch(url, { signal: controller.signal })
+      const response = await fetch(remoteUrl, { signal: controller.signal })
       clearTimeout(timeout)
-      if (response.ok && response.headers.get('content-type')?.includes('image')) {
-        return true
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.startsWith('image/')) {
+        const buffer = await response.arrayBuffer()
+        const base64 = Buffer.from(buffer).toString('base64')
+        const mime = contentType.split(';')[0]
+        return `data:${mime};base64,${base64}`
       }
     } catch (e) {}
-    if (i < retries - 1) await new Promise(r => setTimeout(r, 500))
+    if (i < 2) await new Promise(r => setTimeout(r, 500))
   }
-  return false
+  return getLocalBg()
 }
 
 let prompt = cmd => [`echo "[$USER@$HOSTNAME $PWD]$([ "$UID" = 0 ]&&echo "#"||echo "$") ";${cmd}`]
@@ -149,9 +169,9 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
     Code = await ansi_up.ansi_to_html(Code.join("\n\n"))
 
     const yunzaiInfo = getYunzaiVersion()
-    const bgAvailable = await checkBgAvailable()
+    const bgData = await getBgData()
 
-    const img = await puppeteer.screenshots("Code", { tplFile, htmlDir, Code, multiPageHeight: 20000 ,cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable })
+    const img = await puppeteer.screenshots("Code", { tplFile, htmlDir, Code, multiPageHeight: 20000 ,cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable: !!bgData, bgData })
     return this.reply(img, true)
   }
 
@@ -190,9 +210,9 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
     Code = inspectCmd(hljs.highlight(cmd, { language: langCmd }).value, Code)
 
     const yunzaiInfo = getYunzaiVersion()
-    const bgAvailable = await checkBgAvailable()
+    const bgData = await getBgData()
 
-    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable })
+    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable: !!bgData, bgData })
     return this.reply(img, true)
   }
 

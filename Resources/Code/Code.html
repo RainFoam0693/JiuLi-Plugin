@@ -285,9 +285,9 @@
             opacity: 0.6;
             pointer-events: none;
         }
-        {{if bgAvailable}}
+        {{if bgData}}
         .output-box::after {
-            background-image: url('https://t.alcy.cc/mp');
+            background-image: url('{{bgData}}');
             background-size: cover;
             background-position: center;
             opacity: 0.25;
@@ -317,7 +317,11 @@
             left: 0;
             right: 0;
             bottom: 0;
+            {{if bgData}}
+            background-image: url('{{bgData}}');
+            {{else}}
             background-image: url('https://t.alcy.cc/mp');
+            {{/if}}
             background-size: cover;
             background-position: center;
             opacity: 0.2;
@@ -472,7 +476,7 @@
                 <div class="section-label">Output Log</div>
                 <div class="section-line"></div>
             </div>
-            <div class="output-box{{if !bgAvailable}} no-bg{{/if}}">
+            <div class="output-box{{if !bgData}} no-bg{{/if}}">
                 <div class="output-content">{{@Code}}</div>
             </div>
         </div>
