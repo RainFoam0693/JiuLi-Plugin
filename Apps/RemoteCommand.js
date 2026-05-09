@@ -203,8 +203,6 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
       Code.push(ret.stdout)
     if (ret.error)
       Code.push(`远程命令错误：\n${Bot.Loging(ret.error)}`)
-    else if (ret.stderr && process.platform !== 'win32')
-      Code.push(`标准错误输出：\n${Bot.Loging(ret.stderr)}`)
 
     Code = await ansi_up.ansi_to_html(Code.join("\n\n"))
     Code = inspectCmd(hljs.highlight(cmd, { language: langCmd }).value, Code)
