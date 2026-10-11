@@ -2,25 +2,43 @@ import fs from "node:fs/promises"
 import File from "../Model/file.js"
 import path from "path"
 import puppeteer from "../../../lib/puppeteer/puppeteer.js"
+import { getBaiduLatency } from "../Model/latency.js"
 
 const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/SourceCode/`
 const tplFile = `${htmlDir}SourceCode.html`
 
-// 检测背景API是否可用（重试3次）
-async function checkBgAvailable(url = 'https://t.alcy.cc/mp', retries = 3) {
-  for (let i = 0; i < retries; i++) {
+async function getLocalBg() {
+  const bgDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/bg`
+  try {
+    const files = (await fs.readdir(bgDir)).filter(f => /\.(?:jpe?g|png|webp)$/i.test(f))
+    if (files.length) {
+      const file = files[Math.floor(Math.random() * files.length)]
+      const buffer = await fs.readFile(path.join(bgDir, file))
+      const ext = path.extname(file).slice(1).toLowerCase()
+      const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg'
+      return `data:${mime};base64,${buffer.toString('base64')}`
+    }
+  } catch {}
+  return ''
+}
+
+async function getBgData() {
+  const url = 'https://t.alcy.cc/mp'
+  for (let i = 0; i < 3; i++) {
     try {
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 3000)
       const response = await fetch(url, { signal: controller.signal })
       clearTimeout(timeout)
-      if (response.ok && response.headers.get('content-type')?.includes('image')) {
-        return true
+      const contentType = response.headers.get('content-type') || ''
+      if (response.ok && contentType.startsWith('image/')) {
+        const buffer = Buffer.from(await response.arrayBuffer())
+        return `data:${contentType.split(';')[0]};base64,${buffer.toString('base64')}`
       }
     } catch (e) {}
-    if (i < retries - 1) await new Promise(r => setTimeout(r, 500))
+    if (i < 2) await new Promise(r => setTimeout(r, 500))
   }
-  return false
+  return await getLocalBg()
 }
 
 export class SourceCode extends plugin {
@@ -73,12 +91,13 @@ export class SourceCode extends plugin {
       .replace(/'/g, "&#39;")
       .replace(/ /g, "&nbsp;")
     const fileSuffix = path.extname(scFile).slice(1)
-    const bgAvailable = await checkBgAvailable()
+    const [bgData, baiduLatency] = await Promise.all([getBgData(), getBaiduLatency()])
     const img = await puppeteer.screenshots("SourceCode", {
       tplFile, htmlDir, SourceCode, fileSuffix,
       lnStart: (rows && rows[0]) || 1,
       multiPageHeight: 20000,
-      bgAvailable
+      bgData,
+      baidu_latency: baiduLatency
     })
 
     await this.reply(img, true)

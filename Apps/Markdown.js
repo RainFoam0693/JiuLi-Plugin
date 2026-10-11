@@ -3,24 +3,25 @@ import File from "../Model/file.js"
 import puppeteer from "../../../lib/puppeteer/puppeteer.js"
 import MarkdownIt from "markdown-it"
 import path from "path"
+import { getBaiduLatency } from "../Model/latency.js"
 const md = new MarkdownIt({ html: true })
 
 const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Markdown/`
 const tplFile = `${htmlDir}Markdown.html`
 
 // 本地 fallback 背景图
-function getLocalBg() {
+async function getLocalBg() {
   const bgDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/bg`
-  if (fs.existsSync(bgDir)) {
-    const files = fs.readdirSync(bgDir).filter(f => f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.jpeg') || f.endsWith('.webp'))
+  try {
+    const files = (await fs.readdir(bgDir)).filter(f => f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.jpeg') || f.endsWith('.webp'))
     if (files.length > 0) {
       const file = files[Math.floor(Math.random() * files.length)]
-      const buffer = fs.readFileSync(path.join(bgDir, file))
+      const buffer = await fs.readFile(path.join(bgDir, file))
       const ext = file.split('.').pop()
       const mime = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg'
       return `data:${mime};base64,${buffer.toString('base64')}`
     }
-  }
+  } catch {}
   return ''
 }
 
@@ -43,7 +44,7 @@ async function getBgData() {
     } catch (e) {}
     if (i < 2) await new Promise(r => setTimeout(r, 500))
   }
-  return getLocalBg()
+  return await getLocalBg()
 }
 
 export class Markdown extends plugin {
@@ -84,12 +85,13 @@ export class Markdown extends plugin {
     }
 
     const Markdown = md.render(await fs.readFile(mdFile, "utf-8"))
-    const bgData = await getBgData()
+    const [bgData, baiduLatency] = await Promise.all([getBgData(), getBaiduLatency()])
     const img = await puppeteer.screenshot("Markdown", {
       tplFile,
       htmlDir,
       Markdown,
       background: bgData,
+      baidu_latency: baiduLatency,
       pageGotoParams: {
         waitUntil: "networkidle2"
       }

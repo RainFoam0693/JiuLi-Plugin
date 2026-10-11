@@ -7,338 +7,239 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <style>
         :root {
-            --bg-main: #0a0e14;
-            --card-bg: #0d1117;
-            --neon-green: #00ff9f;
-            --neon-cyan: #00d4ff;
-            --neon-purple: #bd93f9;
-            --text-primary: #e2e2e2;
-            --text-dim: #6272a4;
-            --border-glow: rgba(0, 255, 159, 0.2);
+            --mint: #72f7ce;
+            --cyan: #75e8ff;
+            --purple: #d7c0ff;
+            --text: rgba(255,255,255,.96);
+            --text-soft: rgba(230,240,255,.76);
+            --text-dim: rgba(226,238,255,.60);
+            --mono: 'SF Mono', 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
 
         body {
             width: fit-content;
             min-width: 850px;
             max-width: 1200px;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
-            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-            padding: 20px;
-            overflow: hidden;
-        }
-
-        /* Scanline Overlay */
-        .scanlines {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 100;
-            pointer-events: none;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 0, 0, 0) 0px,
-                rgba(0, 0, 0, 0) 2px,
-                rgba(0, 0, 0, 0.02) 2px,
-                rgba(0, 0, 0, 0.02) 4px
-            );
-        }
-
-        /* Main Card - Liquid Glass with depth */
-        .main-card {
-            position: relative;
-            z-index: 10;
-            background: rgba(20, 20, 28, 0.25);
-            backdrop-filter: blur(60px) saturate(140%);
-            -webkit-backdrop-filter: blur(60px) saturate(140%);
             min-height: 100vh;
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.18);
-            box-shadow: 
-                inset 0 1px 1px rgba(255, 255, 255, 0.25),
-                0 25px 50px -12px rgba(0, 0, 0, 0.6),
-                0 0 0 1px rgba(255, 255, 255, 0.05);
+            padding: 24px;
             overflow: hidden;
+            position: relative;
+            isolation: isolate;
+            background: linear-gradient(145deg, #8aa7c2, #738eae 48%, #91a6be);
+            color: var(--text-soft);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
         }
 
-        /* Background image layer - blurred and scaled for depth effect */
-        .main-card .bg-layer {
+        .page-bg {
             position: absolute;
-            top: -10%;
-            left: -10%;
-            width: 120%;
-            height: 120%;
+            inset: -45px;
+            z-index: 0;
             background-size: cover;
             background-position: center;
-            filter: blur(15px) brightness(0.7);
-            -webkit-filter: blur(15px) brightness(0.7);
-            transform: scale(1.08);
-            z-index: -2;
+            filter: blur(22px) brightness(.84) saturate(1.08);
+            transform: scale(1.06);
             pointer-events: none;
         }
 
-        /* Gradient overlay for better readability */
-        .main-card .bg-overlay {
+        .page-bg::after {
+            content: "";
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, 
-                rgba(26, 26, 46, 0.6) 0%, 
-                rgba(22, 33, 62, 0.7) 50%, 
-                rgba(15, 15, 35, 0.8) 100%
-            );
+            inset: 0;
+            background:
+                radial-gradient(circle at 15% 3%, rgba(255,255,255,.34), transparent 35%),
+                radial-gradient(circle at 88% 90%, rgba(117,232,255,.20), transparent 42%),
+                linear-gradient(145deg, rgba(62,82,114,.08), rgba(18,28,52,.22));
+        }
+
+        .main-card {
+            position: relative;
+            z-index: 1;
+            min-width: 802px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,.34);
+            border-radius: 36px;
+            background: linear-gradient(145deg, rgba(255,255,255,.21), rgba(255,255,255,.09));
+            box-shadow: inset 0 1px 1px rgba(255,255,255,.50), inset 0 -1px 1px rgba(255,255,255,.12), 0 26px 60px -18px rgba(16,26,48,.24), 0 8px 20px rgba(16,26,48,.10);
+            backdrop-filter: blur(42px) saturate(170%);
+            -webkit-backdrop-filter: blur(42px) saturate(170%);
+        }
+
+        .card-bg {
+            position: absolute;
+            inset: -10%;
+            z-index: -2;
+            opacity: .50;
+            background-size: cover;
+            background-position: center;
+            filter: blur(24px) brightness(.90) saturate(1.08);
+            transform: scale(1.08);
+        }
+
+        .card-overlay {
+            position: absolute;
+            inset: 0;
             z-index: -1;
-            pointer-events: none;
+            background: radial-gradient(circle at 8% 0%, rgba(255,255,255,.18), transparent 34%), linear-gradient(145deg, rgba(21,32,55,.18), rgba(15,25,46,.38));
         }
 
         .main-card::before {
             content: "";
             position: absolute;
             top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, 
-                transparent, 
-                rgba(255, 255, 255, 0.5), 
-                transparent
-            );
-            z-index: 1;
+            left: 8%;
+            right: 8%;
+            height: 2px;
+            z-index: 3;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.72), transparent);
+            filter: blur(.5px);
         }
 
-        .main-card::after {
-            content: "";
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(ellipse at 30% 0%, rgba(255,255,255,0.1) 0%, transparent 50%),
-                        radial-gradient(ellipse at 70% 100%, rgba(0, 212, 255, 0.05) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        /* Corner Decorations */
-        .corner {
-            position: absolute;
-            width: 25px;
-            height: 25px;
-            border-color: var(--neon-green);
-            border-style: solid;
-            border-width: 0;
-        }
-        .corner-tl { top: 12px; left: 12px; border-top-width: 2px; border-left-width: 2px; }
-        .corner-tr { top: 12px; right: 12px; border-top-width: 2px; border-right-width: 2px; }
-        .corner-bl { bottom: 12px; left: 12px; border-bottom-width: 2px; border-left-width: 2px; }
-        .corner-br { bottom: 12px; right: 12px; border-bottom-width: 2px; border-right-width: 2px; }
-
-        /* Header */
         .window-header {
-            background: rgba(0, 255, 159, 0.03);
-            padding: 18px 25px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(0, 255, 159, 0.1);
+            justify-content: space-between;
+            gap: 24px;
+            padding: 26px 30px;
+            border-bottom: 1px solid rgba(255,255,255,.16);
+            background: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.035));
         }
 
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
+        .header-left, .file-info, .footer-left, .footer-item, .status-indicator { display: flex; align-items: center; }
+        .header-left { gap: 18px; }
+        .file-info { gap: 16px; }
+        .footer-left { gap: 17px; }
+        .footer-item, .status-indicator { gap: 7px; }
 
         .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: rgba(0, 255, 159, 0.08);
-            border: 1px solid rgba(0, 255, 159, 0.25);
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--neon-green);
-            font-size: 16px;
-            text-shadow: 0 0 15px var(--neon-green);
+            width: 54px;
+            height: 54px;
+            display: grid;
+            place-items: center;
+            border: 1px solid rgba(255,255,255,.38);
+            border-radius: 18px;
+            color: var(--mint);
+            font: 700 19px var(--mono);
+            background: linear-gradient(145deg, rgba(255,255,255,.25), rgba(255,255,255,.08));
+            box-shadow: inset 0 1px rgba(255,255,255,.58), 0 10px 24px rgba(20,35,60,.15);
+            backdrop-filter: blur(22px) saturate(180%);
         }
 
-        .title-text h1 {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: 3px;
-            text-transform: uppercase;
-        }
-        .title-text h1 .accent { color: var(--neon-green); }
-        .title-text .subtitle {
-            font-size: 9px;
-            color: var(--text-dim);
-            letter-spacing: 2px;
-            margin-top: 3px;
-        }
-
-        .file-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+        .title-text h1 { margin: 0; color: var(--text); font-size: 22px; font-weight: 650; letter-spacing: 2.5px; }
+        .title-text .accent { color: var(--mint); }
+        .title-text .subtitle { margin-top: 5px; color: var(--text-dim); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; }
 
         .window-controls { display: flex; gap: 8px; }
-        .control { width: 12px; height: 12px; border-radius: 50%; }
-        .red { background: #ff5f56; box-shadow: 0 0 8px rgba(255, 95, 86, 0.5); }
-        .yellow { background: #ffbd2e; box-shadow: 0 0 8px rgba(255, 189, 46, 0.5); }
-        .green { background: #27c93f; box-shadow: 0 0 8px rgba(39, 201, 63, 0.5); }
+        .control { width: 11px; height: 11px; border-radius: 50%; }
+        .red { background: #ff6b64; box-shadow: 0 0 8px rgba(255,107,100,.45); }
+        .yellow { background: #ffc545; box-shadow: 0 0 8px rgba(255,197,69,.42); }
+        .green { background: #42d65f; box-shadow: 0 0 8px rgba(66,214,95,.42); }
 
         .file-suffix-badge {
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            color: var(--neon-cyan);
-            padding: 4px 14px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
+            min-width: 72px;
+            padding: 9px 15px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,.34);
+            border-radius: 999px;
+            color: var(--cyan);
+            font: 650 12px var(--mono);
             text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+            letter-spacing: 1.4px;
+            background: linear-gradient(145deg, rgba(255,255,255,.20), rgba(117,232,255,.09));
+            box-shadow: inset 0 1px rgba(255,255,255,.46), 0 8px 20px rgba(16,28,50,.12);
+            backdrop-filter: blur(20px) saturate(180%);
         }
 
-        /* Code Area */
-        .code-container {
-            padding: 25px;
-            background: rgba(0, 0, 0, 0.3);
-        }
+        .code-container { padding: 28px 30px; }
 
         .code-wrapper {
-            border: 1px solid rgba(0, 255, 159, 0.1);
-            border-radius: 8px;
-            overflow: hidden;
-            background: rgba(0, 0, 0, 0.4);
             position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,.27);
+            border-radius: 26px;
+            background: linear-gradient(145deg, rgba(10,19,35,.48), rgba(12,22,40,.30));
+            box-shadow: inset 0 1px rgba(255,255,255,.20), 0 18px 42px rgba(16,28,50,.16);
+            backdrop-filter: blur(28px) saturate(165%);
         }
 
-        .code-wrapper::after {
+        .code-wrapper::before {
             content: "";
             position: absolute;
             top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: url('https://t.alcy.cc/mp');
+            left: 9%;
+            right: 9%;
+            height: 2px;
+            z-index: 3;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.64), transparent);
+        }
+
+        .code-visual {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            opacity: .20;
             background-size: cover;
             background-position: center;
-            opacity: 0.25;
+            filter: saturate(1.02) brightness(.76);
             pointer-events: none;
-            border-radius: 8px;
         }
 
-        pre { margin: 0; }
-        code {
-            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
-            font-size: 14px !important;
-            line-height: 1.65 !important;
-            background: transparent !important;
-            color: var(--text-primary) !important;
-            text-shadow: 0 0 2px rgba(255, 255, 255, 0.1);
-        }
+        pre { position: relative; z-index: 1; margin: 0; padding: 22px 8px; white-space: pre-wrap; word-break: break-all; }
+        code { color: var(--text) !important; font-family: var(--mono) !important; font-size: 14px !important; line-height: 1.68 !important; background: transparent !important; text-shadow: 0 1px 6px rgba(10,20,36,.36); }
+        .hljs { padding: 0 !important; background: transparent !important; }
 
-        /* Line Numbers */
-        .hljs-ln-numbers {
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-            text-align: right;
-            color: rgba(0, 255, 159, 0.3) !important;
-            vertical-align: top;
-            padding-right: 18px !important;
-            padding-left: 18px !important;
-            border-right: 1px solid rgba(0, 255, 159, 0.15) !important;
-            text-shadow: 0 0 8px rgba(0, 255, 159, 0.3) !important;
-            font-size: 13px !important;
-        }
-        .hljs-ln-code {
-            padding-left: 20px !important;
-        }
-        .hljs-ln tr:hover {
-            background: rgba(0, 255, 159, 0.03) !important;
-        }
+        .hljs-ln-numbers { padding: 0 18px !important; text-align: right; vertical-align: top; color: rgba(114,247,206,.45) !important; border-right: 1px solid rgba(255,255,255,.14) !important; font-size: 13px !important; user-select: none; }
+        .hljs-ln-code { padding-left: 20px !important; }
+        .hljs-ln tr:hover { background: rgba(255,255,255,.035) !important; }
 
-        /* VS Code Syntax Colors */
-        .hljs {
-            background: transparent !important;
-        }
-
-        /* Bottom Bar */
         .footer {
-            padding: 15px 25px;
-            background: rgba(0, 0, 0, 0.2);
-            border-top: 1px solid rgba(0, 255, 159, 0.1);
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            font-size: 11px;
+            gap: 20px;
+            padding: 18px 30px;
+            border-top: 1px solid rgba(255,255,255,.16);
             color: var(--text-dim);
+            font: 11px var(--mono);
+            background: rgba(255,255,255,.035);
         }
 
-        .footer-left {
+        .footer-item .icon, .status-indicator .dot { color: var(--mint); }
+        .footer-item .value { color: var(--cyan); }
+        .status-indicator .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 10px rgba(114,247,206,.66); }
+
+        .latency-pill {
+            min-width: 124px;
+            height: 44px;
+            padding: 0 18px;
             display: flex;
             align-items: center;
-            gap: 15px;
+            justify-content: center;
+            gap: 10px;
+            border: 1px solid rgba(255,255,255,.38);
+            border-radius: 999px;
+            color: var(--text);
+            font: 650 13px var(--mono);
+            background: linear-gradient(145deg, rgba(255,255,255,.27), rgba(255,255,255,.10) 50%, rgba(117,232,255,.16));
+            box-shadow: inset 0 1px rgba(255,255,255,.58), 0 12px 28px rgba(17,29,50,.16);
+            backdrop-filter: blur(24px) saturate(190%);
         }
 
-        .footer-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .footer-item .icon {
-            color: var(--neon-green);
-            font-weight: bold;
-        }
-
-        .footer-item .value {
-            color: var(--neon-cyan);
-        }
-
-        .footer-right {
-            letter-spacing: 2px;
-        }
-
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .status-indicator .dot {
-            width: 6px;
-            height: 6px;
-            background: var(--neon-green);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-            box-shadow: 0 0 8px var(--neon-green);
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
+        .latency-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 5px var(--mint), 0 0 12px rgba(114,247,206,.70); }
+        .latency-dot.offline { background: #ff7b8b; box-shadow: 0 0 5px #ff7b8b, 0 0 12px rgba(255,123,139,.70); }
     </style>
 </head>
 <body>
-    <div class="scanlines"></div>
-    <div class="main-card">
-        <div class="bg-layer" id="bgLayer"></div>
-        <div class="bg-overlay"></div>
-        <div class="corner corner-tl"></div>
-        <div class="corner corner-tr"></div>
-        <div class="corner corner-bl"></div>
-        <div class="corner corner-br"></div>
+    <div class="page-bg" id="pageBg"></div>
+    <main class="main-card">
+        <div class="card-bg" id="cardBg"></div>
+        <div class="card-overlay"></div>
 
         <header class="window-header">
             <div class="header-left">
-                <div class="logo-icon">{}</div>
+                <div class="logo-icon">{ }</div>
                 <div class="title-text">
                     <h1>SOURCE <span class="accent">//</span> VIEWER</h1>
                     <div class="subtitle">TRSS-Plugin Code Analyzer</div>
@@ -346,55 +247,44 @@
             </div>
             <div class="file-info">
                 <div class="window-controls">
-                    <div class="control red"></div>
-                    <div class="control yellow"></div>
-                    <div class="control green"></div>
+                    <span class="control red"></span><span class="control yellow"></span><span class="control green"></span>
                 </div>
                 <span class="file-suffix-badge">{{fileSuffix}}</span>
             </div>
         </header>
 
-        <div class="code-container">
+        <section class="code-container">
             <div class="code-wrapper">
+                <div class="code-visual" id="codeVisual"></div>
                 <pre><code class="hljs" data-ln-start-from="{{lnStart}}">{{@SourceCode}}</code></pre>
             </div>
-        </div>
+        </section>
 
         <footer class="footer">
             <div class="footer-left">
-                <div class="footer-item">
-                    <span class="icon">&lt;/&gt;</span>
-                    <span>TRSS-Plugin</span>
-                </div>
-                <div class="footer-item">
-                    <span class="value">{{fileSuffix}}</span>
-                    <span>FILE</span>
-                </div>
-                <div class="status-indicator">
-                    <span class="dot"></span>
-                    <span>READY</span>
-                </div>
+                <div class="footer-item"><span class="icon">&lt;/&gt;</span><span>TRSS-Plugin v3.0.1</span></div>
+                <div class="footer-item"><span class="value">{{fileSuffix}}</span><span>FILE</span></div>
+                <div class="status-indicator"><span class="dot"></span><span>READY</span></div>
             </div>
-            <div class="footer-right">
-                LINE START: <span class="value">{{lnStart}}</span> &bull; CST+8
+            <div class="latency-pill">
+                <span class="latency-dot{{if baidu_latency === 'TIMEOUT'}} offline{{/if}}"></span>
+                <span>{{@baidu_latency}}</span>
             </div>
         </footer>
-    </div>
+    </main>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.8.0/highlightjs-line-numbers.min.js"></script>
     <script>
-        // Set background image if available
         const bgData = '{{@bgData}}';
         if (bgData && bgData !== 'undefined' && bgData.trim() !== '') {
-            document.getElementById('bgLayer').style.backgroundImage = `url('${bgData}')`;
+            for (const id of ['pageBg', 'cardBg', 'codeVisual']) {
+                document.getElementById(id).style.backgroundImage = `url('${bgData}')`;
+            }
         }
 
         const suffix = '{{fileSuffix}}';
-        if (hljs.getLanguage(suffix)) {
-            document.querySelector('code').classList.add('language-' + suffix);
-        }
-        
+        if (hljs.getLanguage(suffix)) document.querySelector('code').classList.add('language-' + suffix);
         hljs.highlightAll();
         hljs.initLineNumbersOnLoad();
     </script>
