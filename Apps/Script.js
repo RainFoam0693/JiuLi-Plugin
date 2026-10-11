@@ -1,5 +1,6 @@
 import puppeteer from "../../../lib/puppeteer/puppeteer.js";
 import { AnsiUp } from "ansi_up";
+import { getBaiduLatency } from "../Model/latency.js";
 
 const ansi_up = new AnsiUp();
 
@@ -25,18 +26,18 @@ export class Script extends plugin {
     });
   }
 
-  async execTask(e, cmd) {
+  async execTask(e, cmd, baiduLatency) {
     const ret = await Bot.exec(cmd);
 
     if (ret.stdout) {
       const Code = await ansi_up.ansi_to_html(ret.stdout.trim());
-      const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code });
+      const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, baidu_latency: baiduLatency });
       await this.reply(img, true);
     }
 
     if (ret.stderr) {
       const Code = await ansi_up.ansi_to_html(ret.stderr.trim());
-      const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code });
+      const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, baidu_latency: baiduLatency });
       await this.reply(["标准错误输出：", img], true);
     }
 
@@ -50,8 +51,9 @@ export class Script extends plugin {
   async Script(e) {
     if (!this.e.isMaster) return false;
 
+    const baiduLatency = await getBaiduLatency();
     const msg = this.e.msg.replace("脚本执行", "").trim();
     const cmd = `bash "${cmdPath}" cmd "${msg}"`;
-    await this.execTask(e, cmd);
+    await this.execTask(e, cmd, baiduLatency);
   }
 }

@@ -3,6 +3,7 @@ import hljs from "@highlightjs/cdn-assets/highlight.min.js"
 import { AnsiUp } from "ansi_up"
 import fs from "fs"
 import path from "path"
+import { getBaiduLatency } from "../Model/latency.js"
 const ansi_up = new AnsiUp
 
 const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/`
@@ -151,6 +152,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
   async JSPic() {
     if(!this.e.isMaster)return false
+    const baiduLatency = await getBaiduLatency()
     const cmd = this.e.msg.replace("rjp", "").trim()
 
     logger.mark(`[远程命令] 执行Js：${logger.blue(cmd)}`)
@@ -171,7 +173,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
     const yunzaiInfo = getYunzaiVersion()
     const bgData = await getBgData()
 
-    const img = await puppeteer.screenshots("Code", { tplFile, htmlDir, Code, multiPageHeight: 20000 ,cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable: !!bgData, bgData })
+    const img = await puppeteer.screenshots("Code", { tplFile, htmlDir, Code, multiPageHeight: 20000 ,cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable: !!bgData, bgData, baidu_latency: baiduLatency })
     return this.reply(img, true)
   }
 
@@ -192,6 +194,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
   async ShellPic() {
       if(!this.e.isMaster)return false
+    const baiduLatency = await getBaiduLatency()
     const cmd = this.e.msg.replace("rcp", "").trim()
     const ret = await Bot.exec(...prompt(cmd))
 
@@ -210,12 +213,13 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
     const yunzaiInfo = getYunzaiVersion()
     const bgData = await getBgData()
 
-    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable: !!bgData, bgData })
+    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable: !!bgData, bgData, baidu_latency: baiduLatency })
     return this.reply(img, true)
   }
 
   async CatchReply(msg) {
     const rets = [], echo = /^[dmf]mp/.test(this.e.msg)
+    const baiduLatency = await getBaiduLatency()
     let Code = []
     try { for (const i of msg) {
       const ret = await this.reply(i)
@@ -231,7 +235,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
     if (Code.length) {
       Code = await ansi_up.ansi_to_html(Code.join("\n\n"))
-      const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, deviceScaleFactor: 3 })
+      const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, deviceScaleFactor: 3, baidu_latency: baiduLatency })
       this.reply(img, true)
     }
     return rets

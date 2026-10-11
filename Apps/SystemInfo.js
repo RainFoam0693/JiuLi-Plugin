@@ -1,5 +1,6 @@
 import puppeteer from "../../../lib/puppeteer/puppeteer.js"
 import { AnsiUp } from "ansi_up"
+import { getBaiduLatency } from "../Model/latency.js"
 const ansi_up = new AnsiUp
 
 const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/`
@@ -57,6 +58,7 @@ export class SystemInfo extends plugin {
   }
 
   async SystemInfoPic(e) {
+    const baiduLatency = await getBaiduLatency()
     const ret = await Bot.exec(cmds)
 
     if (ret.error) {
@@ -66,11 +68,12 @@ export class SystemInfo extends plugin {
     }
 
     const Code = await ansi_up.ansi_to_html(ret.stdout.trim())
-    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd })
+    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd, baidu_latency: baiduLatency })
     await this.reply(img, true)
   }
 
   async SystemBench(e) {
+    const baiduLatency = await getBaiduLatency()
     if (Running) {
       await this.reply("正在测试，请稍等……", true)
       return false
@@ -87,7 +90,7 @@ export class SystemInfo extends plugin {
     }
 
     const Code = await ansi_up.ansi_to_html(ret.stdout.trim())
-    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: benchcmd })
+    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: benchcmd, baidu_latency: baiduLatency })
     await this.reply(img, true)
     Running = false
   }
