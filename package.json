@@ -8,6 +8,7 @@
     "highlightjs-line-numbers.js": "^2.8.0",
     "markdown-it": "^14.1.0",
     "qrcode": "^1.5.4",
-    "sharp": "0.33.5"
+    "sharp": "0.33.5",
+    "zxing-wasm": "^2.2.4"
   }
 }

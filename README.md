@@ -118,6 +118,13 @@ bash server.sh [端口]
 
 </details>
 
+<details><summary>二维码解析</summary>
+
+- 识别二维码 / 解析二维码 + `图片`
+- 也可以回复二维码图片后发送识别指令
+
+</details>
+
 <details><summary>米哈游登录</summary>
 
 - 二维码登录：米哈游登录
