@@ -1,5 +1,6 @@
 import fs from "node:fs/promises"
 import path from "node:path"
+import { pathToFileURL } from "node:url"
 import puppeteer from "../../../lib/puppeteer/puppeteer.js"
 import { getBaiduLatency } from "../Model/latency.js"
 import {
@@ -12,6 +13,7 @@ import {
 
 const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/QQRegistrationTime/`
 const tplFile = `${htmlDir}QQRegistrationTime.html`
+const iconBase = `${pathToFileURL(path.join(htmlDir, "icons")).href}/`
 
 export class QQRegistrationTime extends plugin {
   constructor () {
@@ -58,6 +60,7 @@ export class QQRegistrationTime extends plugin {
           tplFile,
           htmlDir,
           ...data,
+          iconBase,
           bgData,
           baidu_latency: baiduLatency,
           yunzai_name: yunzai.name,

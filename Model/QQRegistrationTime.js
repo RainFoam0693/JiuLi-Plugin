@@ -63,6 +63,7 @@ export function formatArchive (bot, target, profile, privileges = {}, status) {
     status: formatStatus(status),
     level: level === undefined ? "未公开" : `LV${level}`,
     levelIcons: level === undefined ? "" : levelIcons(level),
+    levelBadges: level === undefined ? [] : levelBadges(level),
     qid: cleanText(profile.QID) || "未设置",
     gender,
     age: formatAge(profile.age),
@@ -452,11 +453,26 @@ function levelIcons (level) {
   if (!Number.isInteger(level) || level < 0) {
     return ""
   }
-  const timePenguin = Math.floor(level / 256)
+  return levelCounts(level).filter(item => item.count > 0).map(item => `${item.label}×${item.count}`).join(" ")
+}
+
+function levelBadges (level) {
+  if (!Number.isInteger(level) || level < 0) {
+    return []
+  }
+  return levelCounts(level).flatMap(item => Array.from({ length: item.count }, () => ({
+    icon: item.icon,
+    label: item.label
+  })))
+}
+
+function levelCounts (level) {
   const remaining = level % 256
-  const crown = Math.floor(remaining / 64)
-  const sun = Math.floor((remaining % 64) / 16)
-  const moon = Math.floor((remaining % 16) / 4)
-  const star = remaining % 4
-  return `${timePenguin ? `时光企鹅×${timePenguin} ` : ""}${"👑".repeat(crown)}${"☀️".repeat(sun)}${"🌙".repeat(moon)}${"⭐".repeat(star)}`.trim()
+  return [
+    { icon: "time-penguin.png", label: "时光企鹅", count: Math.floor(level / 256) },
+    { icon: "crown.png", label: "皇冠", count: Math.floor(remaining / 64) },
+    { icon: "sun.png", label: "太阳", count: Math.floor((remaining % 64) / 16) },
+    { icon: "moon.png", label: "月亮", count: Math.floor((remaining % 16) / 4) },
+    { icon: "star.png", label: "星星", count: remaining % 4 }
+  ]
 }
