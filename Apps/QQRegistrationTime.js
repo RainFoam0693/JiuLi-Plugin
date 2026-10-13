@@ -1,7 +1,6 @@
 import fs from "node:fs/promises"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
-import cfg from "../../../lib/config/config.js"
 import puppeteer from "../../../lib/puppeteer/puppeteer.js"
 import { getBaiduLatency } from "../Model/latency.js"
 import {
@@ -57,7 +56,7 @@ export class QQRegistrationTime extends plugin {
 
       try {
         const yunzai = await getYunzaiInfo()
-        const image = await renderHighResolution({
+        const image = await puppeteer.screenshot("QQRegistrationTime", {
           tplFile,
           htmlDir,
           ...data,
@@ -66,6 +65,7 @@ export class QQRegistrationTime extends plugin {
           baidu_latency: baiduLatency,
           yunzai_name: yunzai.name,
           yunzai_version: yunzai.version,
+          deviceScaleFactor: 3,
           pageGotoParams: { waitUntil: "networkidle2" }
         })
         await e.reply(image, true)
@@ -81,26 +81,6 @@ export class QQRegistrationTime extends plugin {
       logger.error("[TRSS-Plugin][QQ账号档案] 查询失败：", error)
       await e.reply(`查询失败：${error?.message || error}`, true)
       return true
-    }
-  }
-}
-
-async function renderHighResolution (data) {
-  const hadBotOverride = Object.prototype.hasOwnProperty.call(cfg, "bot")
-  const previousBotOverride = hadBotOverride ? cfg.bot : undefined
-  cfg.bot = {
-    ...cfg.bot,
-    puppeteer_deviceScaleFactor: 2
-  }
-
-  try {
-    const buffer = await puppeteer.render("QQRegistrationTime", data)
-    return buffer ? segment.image(buffer) : buffer
-  } finally {
-    if (hadBotOverride) {
-      cfg.bot = previousBotOverride
-    } else {
-      delete cfg.bot
     }
   }
 }
