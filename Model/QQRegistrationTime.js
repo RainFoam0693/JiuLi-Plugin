@@ -1,6 +1,6 @@
 const PROFILE_KEYS = [
   101, 102, 103, 105, 107, 20002, 20003, 20004,
-  20009, 20011, 20016, 20021, 20026, 20031, 20037, 27394
+  20009, 20011, 20021, 20026, 20031, 20037, 27394
 ]
 const PROFILE_KEY_SET = new Set(PROFILE_KEYS)
 const DATE_FORMATTER = new Intl.DateTimeFormat("sv-SE", {
@@ -35,20 +35,21 @@ export function getTargetQQ (event, match) {
 }
 
 export async function queryQQArchive (bot, target) {
-  const [profile, privileges, status] = await Promise.all([
+  const [profile, privileges, status, levelInsight] = await Promise.all([
     fetchICQQProfile(bot, target),
     fetchPrivileges(bot, target),
-    fetchStatus(bot, target)
+    fetchStatus(bot, target),
+    fetchLevelInsight(bot, target)
   ])
 
   if (!profile || (!profile.nickname && !profile.regTimestamp)) {
     return null
   }
 
-  return formatArchive(bot, target, profile, privileges, status)
+  return formatArchive(bot, target, profile, privileges, status, levelInsight)
 }
 
-export function formatArchive (bot, target, profile, privileges = {}, status) {
+export function formatArchive (bot, target, profile, privileges = {}, status, levelInsight = {}) {
   const registration = describeTimestamp(profile.regTimestamp, true)
   const avatarChanged = describeTimestamp(profile.avatarTimestamp)
   const level = toNumber(profile.level)
@@ -71,7 +72,8 @@ export function formatArchive (bot, target, profile, privileges = {}, status) {
     location,
     school: cleanText(profile.school) || "未公开",
     mail: cleanText(profile.mail) || "未公开",
-    mobile: cleanText(profile.mobile) || "未公开",
+    levelAcceleration: formatAcceleration(levelInsight.acceleration),
+    qqDaren: formatDaren(levelInsight.darenDays ?? profile.darenDays),
     signature: cleanText(profile.signature, 100) || "这个人很神秘，还没有写签名。",
     registrationTime: registration.time,
     registrationElapsed: registration.elapsed,
@@ -101,7 +103,8 @@ export function archiveToText (data) {
     `地区：${data.location}`,
     `学校：${data.school}`,
     `邮箱：${data.mail}`,
-    `手机：${data.mobile}`,
+    `等级加速：${data.levelAcceleration}`,
+    `QQ达人：${data.qqDaren}`,
     `签名：${data.signature}`,
     "",
     "时间档案",
@@ -225,6 +228,60 @@ async function fetchPrivileges (bot, target) {
   }
 }
 
+async function fetchLevelInsight (bot, target) {
+  const client = bot?.sdk || bot
+  const getCookies = bindMethod(bot, "getCookies") || bindMethod(client, "getCookies")
+  try {
+    let cookieText = getCookies ? await getCookies("ti.qq.com") : client?.cookies?.["ti.qq.com"]
+    cookieText = cookieText?.cookies || cookieText?.cookie || cookieText
+    if (!cookieText) {
+      return {}
+    }
+
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 8000)
+    try {
+      const params = new URLSearchParams({
+        _wv: "3",
+        _wwv: "1",
+        source: "1",
+        tab: "3",
+        platform: "1",
+        qq: String(target)
+      })
+      const response = await fetch(`https://ti.qq.com/qqlevel/index?${params}`, {
+        headers: {
+          Cookie: String(cookieText),
+          "User-Agent": "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Mobile QQ/9.1",
+          Referer: "https://ti.qq.com/qqlevel/index"
+        },
+        signal: controller.signal
+      })
+      if (!response.ok) {
+        return {}
+      }
+
+      const state = extractInitialState(await response.text())
+      if (!state) {
+        return {}
+      }
+      const returnedUin = findNumericValue(state.qqLevelInfo, ["uin", "lUin", "qq", "userUin"])
+      if (returnedUin !== undefined && returnedUin !== target) {
+        return {}
+      }
+      return {
+        acceleration: extractAcceleration(state),
+        darenDays: findNumericValue(state, ["darenDays", "qqDarenDays", "expertDays", "continuousLoginDays", "continueLoginDays"])
+      }
+    } finally {
+      clearTimeout(timer)
+    }
+  } catch (error) {
+    logger.debug(`[TRSS-Plugin][QQ账号档案] 等级加速查询降级：${error?.message || error}`)
+    return {}
+  }
+}
+
 function bindMethod (target, key) {
   return typeof target?.[key] === "function" ? target[key].bind(target) : null
 }
@@ -236,7 +293,6 @@ function profileParsers () {
     20004: { key: "city", parse: decodeText },
     20009: { key: "sexCode", parse: value => toNumber(value) },
     20011: { key: "mail", parse: decodeText },
-    20016: { key: "mobile", parse: decodeText },
     20021: { key: "school", parse: decodeText },
     20031: { key: "birthday", parse: parseBirthday }
   }
@@ -256,7 +312,7 @@ function normalizeNativeProfile (profile) {
     city: profile.city || profile.area,
     school: profile.school,
     mail: profile.mail || profile.email,
-    mobile: profile.mobile || profile.phone,
+    darenDays: profile.darenDays ?? profile.qqDarenDays ?? profile.login_days ?? profile.loginDays,
     regTimestamp: profile.regTimestamp ?? profile.registrationTime ?? profile.reg_time,
     avatarTimestamp: profile.avatar?.changeTimestamp ?? profile.avatarTimestamp
   }
@@ -276,7 +332,6 @@ function normalizeFieldProfile (fields) {
     city: decodeText(fields.get(20004)),
     school: decodeText(fields.get(20021)),
     mail: decodeText(fields.get(20011)),
-    mobile: decodeText(fields.get(20016)),
     regTimestamp: fields.get(20026),
     avatarTimestamp: fields.get(101)?.[3]
   }
@@ -436,6 +491,103 @@ function formatAge (value) {
 function cleanText (value, maxLength = 40) {
   const text = decodeText(value).replace(/[\r\n\t]+/g, " ").trim()
   return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text
+}
+
+function extractInitialState (html) {
+  const marker = "window.__INITIAL_STATE__"
+  const markerIndex = html.indexOf(marker)
+  if (markerIndex < 0) {
+    return null
+  }
+  const start = html.indexOf("{", markerIndex + marker.length)
+  if (start < 0) {
+    return null
+  }
+
+  let depth = 0
+  let quote = ""
+  let escaped = false
+  for (let index = start; index < html.length; index++) {
+    const char = html[index]
+    if (quote) {
+      if (escaped) {
+        escaped = false
+      } else if (char === "\\") {
+        escaped = true
+      } else if (char === quote) {
+        quote = ""
+      }
+      continue
+    }
+    if (char === "\"" || char === "'") {
+      quote = char
+    } else if (char === "{") {
+      depth++
+    } else if (char === "}" && --depth === 0) {
+      try {
+        return JSON.parse(html.slice(start, index + 1))
+      } catch {
+        return null
+      }
+    }
+  }
+  return null
+}
+
+function extractAcceleration (state) {
+  const direct = findNumericValue(state, [
+    "todayAccelerateDays",
+    "todayAcceleration",
+    "accelerateMultiple",
+    "accelerationMultiple",
+    "speedMultiple"
+  ])
+  if (direct !== undefined) {
+    return direct
+  }
+  if (!Array.isArray(state.taskList)) {
+    return undefined
+  }
+  const days = state.taskList.reduce((total, task) => {
+    if (!task || Number(task.status) === 0) {
+      return total
+    }
+    return total + (toNumber(task.finishedAccelerateDays) || 0)
+  }, 0)
+  return Number(days.toFixed(2))
+}
+
+function findNumericValue (value, keys, visited = new Set()) {
+  if (!value || typeof value !== "object" || visited.has(value)) {
+    return undefined
+  }
+  visited.add(value)
+  for (const key of keys) {
+    const number = toNumber(value[key])
+    if (number !== undefined && number >= 0) {
+      return number
+    }
+  }
+  for (const item of Object.values(value)) {
+    const found = findNumericValue(item, keys, visited)
+    if (found !== undefined) {
+      return found
+    }
+  }
+  return undefined
+}
+
+function formatAcceleration (value) {
+  const acceleration = toNumber(value)
+  return acceleration === undefined ? "协议未返回" : `${Number(acceleration.toFixed(2))} 倍`
+}
+
+function formatDaren (value) {
+  const days = toNumber(value)
+  if (days === undefined) {
+    return "协议未返回"
+  }
+  return days > 0 ? `已点亮 · ${days} 天` : "未点亮"
 }
 
 function getGTK (pskey) {

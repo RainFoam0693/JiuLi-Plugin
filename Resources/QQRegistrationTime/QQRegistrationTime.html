@@ -36,7 +36,7 @@
             z-index: 0;
             background-position: center;
             background-size: cover;
-            filter: blur(15px) brightness(.72) saturate(1.12);
+            filter: blur(15px) brightness(.78) saturate(1.12);
             transform: scale(1.04);
         }
 
@@ -56,7 +56,7 @@
             overflow: hidden;
             border: 1px solid var(--border);
             border-radius: 36px;
-            background: linear-gradient(145deg, rgba(20,38,62,.43), rgba(8,19,38,.30));
+            background: linear-gradient(145deg, rgba(26,47,73,.37), rgba(10,23,43,.25));
             box-shadow: inset 0 1px 1px rgba(255,255,255,.34), inset 0 -1px 1px rgba(255,255,255,.08), 0 26px 60px -18px var(--shadow), 0 8px 24px rgba(3,11,24,.30);
             backdrop-filter: blur(38px) saturate(150%);
         }
@@ -68,7 +68,7 @@
             opacity: .62;
             background-position: center;
             background-size: cover;
-            filter: blur(22px) brightness(.67) saturate(1.12);
+            filter: blur(22px) brightness(.74) saturate(1.12);
             transform: scale(1.08);
         }
 
@@ -76,7 +76,7 @@
             position: absolute;
             inset: 0;
             z-index: -1;
-            background: linear-gradient(145deg, rgba(16,35,58,.25), rgba(5,15,32,.38));
+            background: linear-gradient(145deg, rgba(21,43,68,.19), rgba(7,18,36,.30));
         }
 
         .main-card::before {
@@ -139,7 +139,7 @@
             padding: 24px;
             border: 1px solid rgba(255,255,255,.27);
             border-radius: 26px;
-            background: linear-gradient(145deg, rgba(8,22,42,.68), rgba(13,29,51,.51));
+            background: linear-gradient(145deg, rgba(13,31,54,.60), rgba(18,37,61,.43));
             box-shadow: inset 0 1px rgba(255,255,255,.17), 0 18px 42px rgba(3,12,27,.28);
             backdrop-filter: blur(28px) saturate(165%);
         }
@@ -171,7 +171,7 @@
             padding: 14px 16px;
             border: 1px solid rgba(255,255,255,.18);
             border-radius: 17px;
-            background: linear-gradient(145deg, rgba(9,25,46,.56), rgba(12,30,53,.38));
+            background: linear-gradient(145deg, rgba(14,33,57,.49), rgba(18,38,62,.32));
             box-shadow: inset 0 1px rgba(255,255,255,.13), 0 8px 20px rgba(3,12,26,.12);
         }
         .detail-label, .time-label { margin-bottom: 6px; color: var(--text-dim); font-size: 9px; letter-spacing: 1.4px; text-transform: uppercase; }
@@ -188,6 +188,10 @@
         }
         .level-icon-slot.time-penguin { width: 29px; height: 29px; }
         .level-icon { width: 100%; height: 100%; display: block; object-fit: contain; }
+        .level-card { grid-column: span 2; }
+        .insight-item { position: relative; overflow: hidden; }
+        .insight-item::after { content: ''; position: absolute; right: -24px; bottom: -30px; width: 82px; height: 82px; border-radius: 50%; background: rgba(114,247,206,.10); filter: blur(8px); }
+        .insight-value { position: relative; z-index: 1; color: #baf8e7; font-weight: 680; }
 
         .time-grid { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 10px; }
         .time-item { min-height: 76px; }
@@ -239,7 +243,7 @@
 
             <div class="section-title">Public Profile</div>
             <div class="detail-grid">
-                <div class="detail-item">
+                <div class="detail-item level-card">
                     <div class="detail-label">Level</div>
                     <div class="detail-value level">
                         <span class="level-number">{{level}}</span>
@@ -254,7 +258,8 @@
                 <div class="detail-item"><div class="detail-label">Location</div><div class="detail-value">{{location}}</div></div>
                 <div class="detail-item"><div class="detail-label">School</div><div class="detail-value">{{school}}</div></div>
                 <div class="detail-item"><div class="detail-label">Email</div><div class="detail-value">{{mail}}</div></div>
-                <div class="detail-item"><div class="detail-label">Mobile</div><div class="detail-value">{{mobile}}</div></div>
+                <div class="detail-item insight-item"><div class="detail-label">Level Acceleration</div><div class="detail-value insight-value">{{levelAcceleration}}</div></div>
+                <div class="detail-item insight-item"><div class="detail-label">QQ Talent</div><div class="detail-value insight-value">{{qqDaren}}</div></div>
             </div>
 
             <div class="section-title">Time Archive</div>
