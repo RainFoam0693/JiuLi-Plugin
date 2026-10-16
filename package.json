@@ -4,9 +4,11 @@
   "author": "TimeRainStarSky",
   "dependencies": {
     "@highlightjs/cdn-assets": "^11.10.0",
+    "@undecaf/zbar-wasm": "0.11.0",
     "ansi_up": "^6.0.2",
     "highlightjs-line-numbers.js": "^2.8.0",
     "markdown-it": "^14.1.0",
+    "qr-scanner-wechat": "0.1.3",
     "qrcode": "^1.5.4",
     "sharp": "0.33.5",
     "zxing-wasm": "^2.2.4"
