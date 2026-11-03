@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="440" viewBox="0 0 1280 440" role="img" aria-labelledby="title desc">
+<title id="title">JiuLi-Plugin</title><desc id="desc">Tools for your everyday bot. 二维码、账号档案、文档渲染、图片日志与远程管理。</desc>
+<defs>
+<linearGradient id="bg" x2="1" y2="1"><stop stop-color="#0b1020"/><stop offset="1" stop-color="#171d36"/></linearGradient>
+<linearGradient id="accent"><stop stop-color="#a5b4fc"/><stop offset="1" stop-color="#67e8f9"/></linearGradient>
+<pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M48 0H0V48" fill="none" stroke="#a5b4fc" stroke-opacity=".055"/></pattern>
+</defs>
+<rect width="1280" height="440" rx="24" fill="url(#bg)"/>
+<rect width="1280" height="440" rx="24" fill="url(#grid)"/>
+<circle cx="1130" cy="92" r="175" fill="#818cf8" fill-opacity=".06"/>
+<circle cx="1130" cy="92" r="130" fill="none" stroke="#818cf8" stroke-opacity=".15"/>
+<path d="M64 65h32" stroke="#67e8f9" stroke-width="3"/>
+<text x="110" y="71" fill="#a5b4fc" font-family="Arial,sans-serif" font-size="13" letter-spacing="4">THE EVERYDAY TOOLKIT</text>
+<text x="60" y="180" fill="#f1f5f9" font-family="Arial,sans-serif" font-size="86" font-weight="700" letter-spacing="-3">JiuLi<tspan fill="url(#accent)">-Plugin</tspan></text>
+<text x="66" y="229" fill="#cbd5e1" font-family="Arial,sans-serif" font-size="24">Tools for your everyday bot.</text>
+<text x="66" y="275" fill="#94a3b8" font-family="Arial, sans-serif" font-size="17">二维码 · QQ 账号档案 · 文档渲染 · 图片日志 · 远程管理</text>
+<path d="M66 327H1214" stroke="#334155" stroke-opacity=".65"/>
+<text x="66" y="374" fill="#67e8f9" font-family="Arial,sans-serif" font-size="12" letter-spacing="2">JIULI / YUNZAI</text>
+<text x="1214" y="374" fill="#94a3b8" font-family="Arial,sans-serif" font-size="12" letter-spacing="2" text-anchor="end">ONE PLUGIN. EVERYDAY TOOLS.</text>
+<g transform="translate(1030 153)" stroke="#a5b4fc" stroke-width="2" fill="none"><rect width="166" height="112" rx="14" fill="#0b1020" fill-opacity=".6"/><path d="M0 29H166" stroke-opacity=".3"/><circle cx="17" cy="15" r="3" fill="#67e8f9" stroke="none"/><circle cx="29" cy="15" r="3" fill="#818cf8" stroke="none"/><path d="m25 53 13 12-13 12M50 78h33" stroke="#67e8f9" stroke-linecap="round" stroke-linejoin="round"/></g>
+</svg>
