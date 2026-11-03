@@ -13,15 +13,15 @@ globalThis.logger = {
 const parser = new QRCodeParser()
 
 test("识别清晰二维码", async () => {
-  const image = await QRCode.toBuffer("TRSS QR parser", { width: 320 })
+  const image = await QRCode.toBuffer("JiuLi QR parser", { width: 320 })
   const result = await parser.parse(image)
 
   assert.equal(result.code, 0)
-  assert.equal(result.data, "TRSS QR parser")
+  assert.equal(result.data, "JiuLi QR parser")
 })
 
 test("从长截图中识别小尺寸低对比度二维码", async () => {
-  const image = await QRCode.toBuffer("https://example.com/trss", {
+  const image = await QRCode.toBuffer("https://example.com/jiuli", {
     width: 300,
     margin: 2,
     color: { dark: "#555555", light: "#eeeeee" }
@@ -43,7 +43,7 @@ test("从长截图中识别小尺寸低对比度二维码", async () => {
   const result = await new FallbackParser().parse(screenshot)
 
   assert.equal(result.code, 0)
-  assert.equal(result.data, "https://example.com/trss")
+  assert.equal(result.data, "https://example.com/jiuli")
 })
 
 test("无法解码的装饰图不会产生误码", async () => {

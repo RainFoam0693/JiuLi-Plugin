@@ -125,7 +125,7 @@ async function fetchICQQProfile (bot, target) {
         return normalizeNativeProfile(profile)
       }
     } catch (error) {
-      logger.debug(`[TRSS-Plugin][QQ账号档案] getProfile 降级：${error?.message || error}`)
+      logger.debug(`[JiuLi-Plugin][QQ账号档案] getProfile 降级：${error?.message || error}`)
     }
   }
 
@@ -141,7 +141,7 @@ async function fetchICQQProfile (bot, target) {
         return normalizeFieldProfile(fields)
       }
     } catch (error) {
-      logger.debug(`[TRSS-Plugin][QQ账号档案] 0xfe1_2 降级：${error?.message || error}`)
+      logger.debug(`[JiuLi-Plugin][QQ账号档案] 0xfe1_2 降级：${error?.message || error}`)
     }
   }
 
@@ -153,7 +153,7 @@ async function fetchICQQProfile (bot, target) {
         return normalizeNativeProfile(basic)
       }
     } catch (error) {
-      logger.debug(`[TRSS-Plugin][QQ账号档案] getStrangerInfo 降级：${error?.message || error}`)
+      logger.debug(`[JiuLi-Plugin][QQ账号档案] getStrangerInfo 降级：${error?.message || error}`)
     }
   }
 
@@ -218,7 +218,7 @@ async function fetchPrivileges (bot, target) {
       clearTimeout(timer)
     }
   } catch (error) {
-    logger.debug(`[TRSS-Plugin][QQ账号档案] 会员业务查询降级：${error?.message || error}`)
+    logger.debug(`[JiuLi-Plugin][QQ账号档案] 会员业务查询降级：${error?.message || error}`)
     return { available: false, items: [] }
   }
 }

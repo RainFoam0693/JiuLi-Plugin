@@ -1,4 +1,4 @@
-logger.info(logger.yellow("- 正在加载 TRSS 插件"))
+logger.info(logger.yellow("- 正在加载 JiuLi-Plugin"))
 
 if (process.version < "v18")
   throw Error(`Node.js ${process.version} < v18`)
@@ -86,7 +86,7 @@ Bot.glob ??= async (path, opts = {}) => {
   return array
 }
 
-const files = (await fs.readdir("plugins/TRSS-Plugin/Apps"))
+const files = (await fs.readdir("plugins/JiuLi-Plugin/Apps"))
   .filter(file => file.endsWith(".js"))
 
 const ret = await Promise.allSettled(
@@ -104,4 +104,4 @@ for (const i in files) {
   apps[name] = ret[i].value[name]
 }
 
-logger.info(logger.green(" TRSS 插件- 无后门 加载完成"))
+logger.info(logger.green(" JiuLi-Plugin- 无后门 加载完成"))

@@ -11,7 +11,7 @@ import {
   queryQQArchive
 } from "../Model/QQRegistrationTime.js"
 
-const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/QQRegistrationTime/`
+const htmlDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/QQRegistrationTime/`
 const tplFile = `${htmlDir}QQRegistrationTime.html`
 const iconBase = `${pathToFileURL(path.join(htmlDir, "icons")).href}/`
 
@@ -70,7 +70,7 @@ export class QQRegistrationTime extends plugin {
         })
         await e.reply(image, true)
       } catch (renderError) {
-        logger.warn(`[TRSS-Plugin][QQ账号档案] 图片渲染失败，已降级为文本：${renderError?.message || renderError}`)
+        logger.warn(`[JiuLi-Plugin][QQ账号档案] 图片渲染失败，已降级为文本：${renderError?.message || renderError}`)
         await e.reply([
           segment.image(data.avatar),
           `\n${archiveToText(data)}`
@@ -78,7 +78,7 @@ export class QQRegistrationTime extends plugin {
       }
       return true
     } catch (error) {
-      logger.error("[TRSS-Plugin][QQ账号档案] 查询失败：", error)
+      logger.error("[JiuLi-Plugin][QQ账号档案] 查询失败：", error)
       await e.reply(`查询失败：${error?.message || error}`, true)
       return true
     }
@@ -86,7 +86,7 @@ export class QQRegistrationTime extends plugin {
 }
 
 async function getLocalBg () {
-  const bgDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/bg`
+  const bgDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/Code/bg`
   try {
     const files = (await fs.readdir(bgDir)).filter(file => /\.(?:jpe?g|png|webp)$/i.test(file))
     if (files.length) {

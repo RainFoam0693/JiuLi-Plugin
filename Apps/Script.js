@@ -4,11 +4,11 @@ import { getBaiduLatency } from "../Model/latency.js";
 
 const ansi_up = new AnsiUp();
 
-const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/`;
+const htmlDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/Code/`;
 const tplFile = `${htmlDir}Code.html`;
 const path = `${process.env.HOME}/../`;
 const cmdPath = `${path}Main.sh`;
-const errorTips = "请使用脚本安装，再使用此功能\nhttps://Yunzai.TRSS.me\nhttps://TRSS.me";
+const errorTips = "请使用脚本安装，再使用此功能\n请参阅 JiuLi-Plugin 的 README.md";
 
 export class Script extends plugin {
   constructor() {

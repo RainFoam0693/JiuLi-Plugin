@@ -6,7 +6,7 @@ import path from "path"
 import { getBaiduLatency } from "../Model/latency.js"
 const ansi_up = new AnsiUp
 
-const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/`
+const htmlDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/Code/`
 const tplFile = `${htmlDir}Code.html`
 
 // 获取云崽名称和版本（自动检测trss/miao/原版）
@@ -27,7 +27,7 @@ function getYunzaiVersion() {
 
 // 背景图获取（yenai state 逻辑：远程优先，失败用本地 fallback）
 function getLocalBg() {
-  const bgDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/bg`
+  const bgDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/Code/bg`
   if (fs.existsSync(bgDir)) {
     const files = fs.readdirSync(bgDir).filter(f => f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.jpeg') || f.endsWith('.webp'))
     if (files.length > 0) {

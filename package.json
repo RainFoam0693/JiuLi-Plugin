@@ -1,11 +1,12 @@
 {
-  "name": "TRSS-Plugin",
+  "name": "JiuLi-Plugin",
   "type": "module",
   "author": "TimeRainStarSky",
   "dependencies": {
     "@highlightjs/cdn-assets": "^11.10.0",
     "@undecaf/zbar-wasm": "0.11.0",
     "ansi_up": "^6.0.2",
+    "highlight.js": "^11.10.0",
     "highlightjs-line-numbers.js": "^2.8.0",
     "markdown-it": "^14.1.0",
     "qr-scanner-wechat": "0.1.3",

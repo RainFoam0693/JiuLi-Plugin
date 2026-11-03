@@ -3,9 +3,9 @@ import { AnsiUp } from "ansi_up"
 import { getBaiduLatency } from "../Model/latency.js"
 const ansi_up = new AnsiUp
 
-const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/`
+const htmlDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/Code/`
 const tplFile = `${htmlDir}Code.html`
-const errorTips = "未使用脚本安装，此功能出错属于正常情况\nhttps://TRSS.me"
+const errorTips = "未使用脚本安装，此功能出错属于正常情况\n请参阅 JiuLi-Plugin 的 README.md"
 
 let cmd = "fastfetch"
 let cmds

@@ -6,12 +6,12 @@ import path from "path"
 import { getBaiduLatency } from "../Model/latency.js"
 const md = new MarkdownIt({ html: true })
 
-const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Markdown/`
+const htmlDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/Markdown/`
 const tplFile = `${htmlDir}Markdown.html`
 
 // 本地 fallback 背景图
 async function getLocalBg() {
-  const bgDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/bg`
+  const bgDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/Code/bg`
   try {
     const files = (await fs.readdir(bgDir)).filter(f => f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.jpeg') || f.endsWith('.webp'))
     if (files.length > 0) {

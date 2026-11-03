@@ -1,247 +1,106 @@
+<div align="center">
 
-# TRSS Yunzai Plugin
+# JiuLi-Plugin
 
+**二维码 · QQ 账号档案 · 文档渲染 · 图片日志 · 远程管理**
 
-## 安装教程
+![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A518-339933?logo=nodedotjs&logoColor=white)
+![Modules](https://img.shields.io/badge/Modules-ESM-F7DF1E?logo=javascript&logoColor=black)
+[![JiuLi](https://img.shields.io/badge/%E5%9B%BE%E7%89%87%E6%97%A5%E5%BF%97%E9%80%82%E9%85%8D-JiuLi-6366F1?logo=github)](https://github.com/HL-z7/JiuLi)
 
-1. 准备：[Yunzai-Bot](https://github.com/Le-niao/Yunzai-Bot)
+面向 JiuLi / Yunzai 的多功能插件，让常用工具和运行管理触手可及。
 
-2. 安装：
+[安装与更新](#安装与更新) · [指令速查](#指令速查) · [图片日志](#图片日志) · [常见问题](#常见问题)
 
-```
-git clone https://gitcode.com/RainFoam0693/TRSS-Plugin.git ./plugins/TRSS-Plugin
-pnpm i
-```
+</div>
 
-3. 安装 `图片修复` | `图片背景去除` | `语音合成`，不用可忽略
+> **图片日志适用框架：[JiuLi](https://github.com/HL-z7/JiuLi)**
+>
+> 该功能按 JiuLi 的日志文件与浏览器接口适配，其他宿主需自行适配这两部分。
 
-<details><summary>展开</summary>
+---
 
-安装 [Python 3.10-3.11](https://python.org) 和 [Poetry](https://python-poetry.org)，并在插件目录执行以下操作
+## 安装与更新
 
-```
-poetry install
-```
+运行环境：Node.js 18 及以上，以及已正常运行的 JiuLi / Yunzai。图片输出使用宿主的 Puppeteer 渲染服务。
 
-- 图片修复：
+将插件放入机器人根目录下的 `plugins/JiuLi-Plugin`，然后在机器人根目录安装依赖并重启：
 
-```
-git clone --depth 1 https://gitee.com/TimeRainStarSky/Real-ESRGAN
-cd Real-ESRGAN
-poetry run python setup.py develop
-```
-
-- 图片背景去除：
-
-```
-git clone --depth 1 https://gitee.com/TimeRainStarSky/RemBG
-cd RemBG
-curl -LO https://github.com/TimeRainStarSky/TRSS-Plugin/releases/download/latest/u2net.onnx.xz
-curl -LO https://github.com/TimeRainStarSky/TRSS-Plugin/releases/download/latest/isnetis.onnx.xz
-xz -dv u2net.onnx.xz isnetis.onnx.xz
+```bash
+pnpm install
 ```
 
-- 语音合成：
+通过 Git 安装的实例可在插件目录执行 `git pull --ff-only`，更新后重新安装依赖并重启。
 
-```
-git clone --depth 1 https://gitee.com/TimeRainStarSky/ChatWaifu
-git clone --depth 1 https://gitee.com/TimeRainStarSky/GenshinVoice
-```
+### 已有实例改名
 
-- 语音合成 汉语模型：
+停止机器人后，将插件文件夹改为 `JiuLi-Plugin`，不要同时保留两份插件。资源文件继续放在插件目录内。
 
-```
-cd ChatWaifu
-curl -LO https://github.com/TimeRainStarSky/TRSS-Plugin/releases/download/latest/ChatWaifuCN.txz
-tar -xvJf ChatWaifuCN.txz
-```
+插件无需单独的配置文件，主人权限等设置使用宿主配置。
 
-- 语音合成 日语模型：
+## 指令速查
 
-```
-cd ChatWaifu
-curl -LO https://github.com/TimeRainStarSky/TRSS-Plugin/releases/download/latest/ChatWaifuJP.txz
-tar -xvJf ChatWaifuJP.txz
-```
+| 功能 | 指令示例 | 说明 |
+| --- | --- | --- |
+| 二维码生成 | `二维码你好` | 将文字生成二维码 |
+| 二维码解析 | `识别二维码` / `解析二维码` | 随指令发图、回复图片或按提示补发图片；本地解码 |
+| QQ 账号档案 | `#QQ注册时间12345678` | 仅支持 ICQQ；可 @目标，不指定时查询自己 |
+| 图片日志 | `#图片日志` / `#运行图片日志50` / `#错误图片日志50关键词` | 主人权限，默认最近 100 行，最多 1000 行，可筛选关键词 |
+| 系统信息 | `系统信息` / `系统信息图片` / `系统测试` | 依赖宿主安装的系统工具 |
+| Markdown | `md文件路径或URL` | 主人权限，渲染文档图片 |
+| 代码高亮 | `sc文件路径或URL` | 主人权限；支持 `sc起始行~结束行` |
+| Shell 命令 | `rc命令` / `rcp命令` | 主人权限，文本 / 图片输出 |
+| JavaScript | `rj代码` / `rjp代码` | 主人权限，文本 / 图片输出 |
+| 消息表达式 | `dm表达式` / `mm表达式` / `fm表达式` | 主人权限，单条 / 多条 / 转发消息；加 `p` 以图片输出 |
+| 文件管理 | `文件查看路径` / `文件上传路径` / `文件下载路径` | 主人权限 |
+| 脚本执行 | `脚本执行命令` | 主人权限，依赖宿主安装脚本 |
 
-- 语音合成 原神模型：
-```
-cd GenshinVoice
-curl -LO https://github.com/TimeRainStarSky/TRSS-Plugin/releases/download/latest/G_809000.pth.xz
-xz -dv G_809000.pth.xz
-```
+远程命令与文件操作使用宿主的主人权限设置。QQ 账号档案内容以协议返回的公开资料为准；图片渲染失败时会回退为文本。
 
-<details><summary>部署为 API 服务器</summary>
+系统信息与脚本执行功能依赖宿主环境提供的命令行工具与安装脚本。
 
-```
-bash server.sh [端口]
-```
+## 图片日志
 
-</details>
+### 适用范围
 
-- 阿里云盘 / 百度网盘：
+图片日志为 **[JiuLi 仓库](https://github.com/HL-z7/JiuLi)** 使用，复用框架已启动的浏览器，并按 JiuLi 的日志目录读取内容。
 
-使用脚本安装后，启动 CLI，输入 `login -h`，按提示登录
+### 使用示例
 
-</details>
+| 指令 | 效果 |
+| --- | --- |
+| `#图片日志` | 查看当天最近 100 行运行日志 |
+| `#运行图片日志50` | 查看当天最近 50 行运行日志 |
+| `#错误图片日志50` | 查看最近 50 行错误日志 |
+| `#图片日志50登录` | 查看最近 50 行包含“登录”的运行日志 |
+| `#错误图片日志超时` | 查看最近 100 行包含“超时”的错误日志 |
 
-## 使用教程
+仅主人可用，默认 **100 行**，最多 **1000 行**。先按关键词筛选，再取最近的记录。
 
-<details><summary>图片修复</summary>
+### 日志来源
 
-- 图片修复 / 动漫图片修复 + `图片`
+| 类型 | 文件位置 |
+| --- | --- |
+| 运行日志 | `logs/command.YYYY-MM-DD.log`，按北京时间取当天 |
+| 错误日志 | `logs/error.log` |
 
-</details>
+本地高亮样式 · 行号展示 · 复用宿主浏览器 · 图片直接发送，无临时文件。
 
-<details><summary>图片背景去除</summary>
-
-- 图片背景去除 / 动漫图片背景去除 + `图片`
-
-</details>
-
-<details><summary>语音合成</summary>
-
-- `角色名` + 说 + `中文`
-- 语音合成角色列表
-
-</details>
-
-<details><summary>系统信息</summary>
-
-- 系统信息 / 系统信息图片 / 系统测试
-
-</details>
-
-<details><summary>二维码生成</summary>
-
-- 二维码 + `文字`
-
-</details>
-
-<details><summary>二维码解析</summary>
-
-- 识别二维码 / 解析二维码 + `图片`
-- 也可以回复二维码图片后发送识别指令
-
-</details>
-
-<details><summary>米哈游登录</summary>
-
-- 二维码登录：米哈游登录
-- 账号密码登录：米哈游登录 + `账号`
-
-</details>
-
-<details><summary>Markdown（权限：主人）</summary>
-
-- md + `文件` / `URL`
-
-</details>
-
-<details><summary>代码高亮（权限：主人）</summary>
-
-- sc + `文件` / `URL`
-
-</details>
-
-<details><summary>远程命令（权限：主人）</summary>
-
-- rc + `Shell 命令`
-- rj + `JavaScript 命令`
-- dm(单条消息) / mm(多条消息) / fm(转发消息) + `JavaScript 表达式`
-- rcp / rjp / dmp / mmp / fmp 以图片显示输出
-
-</details>
-
-<details><summary>文件操作（权限：主人）</summary>
-
-- 文件查看 / 文件上传 / 文件下载 + `路径`
-
-</details>
-
-<details><summary>阿里云盘（权限：主人）</summary>
-
-阿里云盘 +
-
-- 帮助
-- 上传
-- 下载
-- 相簿
-- 链接
-- 查看
-- 创建目录
-- 移动
-- 回收站
-- 重命名
-- 删除
-- 分享
-- 同步备份
-- 树形图
-- 在线网盘
-- 切换网盘
-- 登录账号
-- 账号列表
-- 退出账号
-- 空间配额
-- 切换账号
-- 当前账号
-
-</details>
-
-<details><summary>百度网盘（权限：主人）</summary>
-
-百度网盘 +
-
-- 帮助
-- 上传
-- 下载
-- 复制
-- 链接
-- 查看
-- 元信息
-- 创建目录
-- 移动
-- 离线下载
-- 空间配额
-- 回收站
-- 删除
-- 搜索
-- 分享
-- 转存
-- 树形图
-- 登录账号
-- 账号列表
-- 退出账号
-- 切换账号
-- 当前账号
-
-</details>
+> 原 `plugins/example/图片日志.js` 使用相同指令，启用插件中的图片日志前请停用旧脚本，避免重复响应。
 
 ## 常见问题
 
-<details><summary>展开</summary>
+- **插件或模板找不到**：确认安装目录为 `plugins/JiuLi-Plugin`，更新后已重启，且没有重复安装。
+- **依赖缺失**：在机器人根目录重新执行 `pnpm install`。
+- **图片无法生成**：检查宿主 Puppeteer 是否可用、模板是否完整，以及日志中是否有浏览器或字体错误。
+- **QQ 查询不可用**：确认使用 ICQQ 适配器，目标 QQ 号正确，并查看接口返回情况。
+- **进程被系统终止**：检查内存占用，按需增加可用内存或交换空间。
+- **Windows 编译依赖失败**：按报错安装 Microsoft C++ 生成工具；需要运行 `bash` 的功能还需可用的 Bash 环境。
 
-- 问：`ModuleNotFoundError: No module named 'xxx'`
-- 答：未正确执行 `poetry install`
+反馈问题时请提供指令、运行环境和相关错误日志，并隐藏账号凭据。
 
-- 问：`已杀死` | `Signal 9` | `MemoryError`
-- 答：`清理内存` 或 `增加 SWAP`
+## 致谢
 
-- 问：使用 `Git Bash` 执行 `poetry install` 失败
-- 答：改用 `命令提示符` 或 `Windows PowerShell`
+本项目基于 TimeRainStarSky 的插件代码继续维护，保留原作者署名；同时感谢相关开源工具与宿主项目。
 
-- 问：`error: Microsoft Visual C++ 14.0 or greater is required.`
-- 答：下载安装 [Microsoft C++ 生成工具](https://visualstudio.microsoft.com/zh-hans/visual-cpp-build-tools)
-![Microsoft C++ 生成工具](Picture/Microsoft_C++_生成工具.png)
-
-- 问：`'bash' 不是内部或外部命令，也不是可运行的程序或批处理文件` `bash : 无法将“sh”项识别为 cmdlet、函数、脚本文件或可运行程序的名称。请检查名称的拼写，如果包括路径，请确保路径正确，然后再试一次。`
-- 答：改用 `Git Bash`
-
-- 问：手动安装过程中出现问题
-- 答：建议自行解决，不会就用脚本一键安装
-
-- 问：我有其他问题
-- 答：提供详细问题描述，通过下方 联系方式 反馈问题
-
-</details>
-
+图片日志功能改编自狐的图片日志脚本，保留原文件中的作者说明。

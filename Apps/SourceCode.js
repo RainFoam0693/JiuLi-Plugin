@@ -4,11 +4,11 @@ import path from "path"
 import puppeteer from "../../../lib/puppeteer/puppeteer.js"
 import { getBaiduLatency } from "../Model/latency.js"
 
-const htmlDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/SourceCode/`
+const htmlDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/SourceCode/`
 const tplFile = `${htmlDir}SourceCode.html`
 
 async function getLocalBg() {
-  const bgDir = `${process.cwd()}/plugins/TRSS-Plugin/Resources/Code/bg`
+  const bgDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/Code/bg`
   try {
     const files = (await fs.readdir(bgDir)).filter(f => /\.(?:jpe?g|png|webp)$/i.test(f))
     if (files.length) {
