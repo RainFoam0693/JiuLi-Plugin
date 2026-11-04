@@ -140,7 +140,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
     logger.mark(`[远程命令] 执行Js：${logger.blue(cmd)}`)
     const ret = await this.evalSync(cmd, data => Bot.String(data))
-    logger.mark(`[远程命令]\n${ret.stdout ?? ""}${ret.error ? `\n${logger.red(ret.error.stack)}` : ""}`)
+    logger.mark(`[远程命令]\n${ret.stdout}\n${logger.red(ret.error?.stack)}`)
 
     if (!ret.stdout && !ret.error)
       return this.reply("命令执行完成，没有返回值", true)
@@ -157,7 +157,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
     logger.mark(`[远程命令] 执行Js：${logger.blue(cmd)}`)
     const ret = await this.evalSync(cmd, data => Bot.Loging(data))
-    logger.mark(`[远程命令]\n${ret.stdout ?? ""}${ret.error ? `\n${logger.red(ret.error.stack)}` : ""}`)
+    logger.mark(`[远程命令]\n${ret.stdout}\n${logger.red(ret.error?.stack)}`)
 
 
     if (!ret.stdout && !ret.error)
