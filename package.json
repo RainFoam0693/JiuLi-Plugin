@@ -14,5 +14,13 @@
     "sharp": "0.33.5",
     "zxing-wasm": "^2.2.4",
     "yaml": "^2.8.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RainFoam0693/JiuLi-Plugin.git"
+  },
+  "homepage": "https://github.com/RainFoam0693/JiuLi-Plugin#readme",
+  "bugs": {
+    "url": "https://github.com/RainFoam0693/JiuLi-Plugin/issues"
   }
 }

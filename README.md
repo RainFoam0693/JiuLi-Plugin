@@ -10,8 +10,8 @@
 
 ![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=nodedotjs&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-ES_Modules-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
-[![GitHub](https://img.shields.io/badge/GitHub-源码-181717?style=flat-square&logo=github)](https://github.com/RainFoam0693/JiuLi-Plugin)
-[![GitCode](https://img.shields.io/badge/GitCode-国内仓库-EF4058?style=flat-square)](https://gitcode.com/RainFoam0693/JiuLi-Plugin)
+[![GitHub](https://img.shields.io/badge/GitHub-主仓库-181717?style=flat-square&logo=github)](https://github.com/RainFoam0693/JiuLi-Plugin)
+[![GitCode](https://img.shields.io/badge/GitCode-国内镜像-EF4058?style=flat-square)](https://gitcode.com/RainFoam0693/JiuLi-Plugin)
 
 [快速开始](#快速开始) · [功能一览](#功能一览) · [指令手册](#指令手册) · [图片日志](#图片日志) · [问题排查](#问题排查)
 
@@ -42,9 +42,11 @@ QQ 账号档案需要 **ICQQ** 适配器；图片日志专为 **[JiuLi](https://
 
 ### 02 / 安装插件
 
+[GitHub](https://github.com/RainFoam0693/JiuLi-Plugin) 为主仓库，问题反馈与功能建议统一提交至 [GitHub Issues](https://github.com/RainFoam0693/JiuLi-Plugin/issues)。[GitCode](https://gitcode.com/RainFoam0693/JiuLi-Plugin) 为国内加速镜像，方便国内用户安装和更新。
+
 在**机器人根目录**执行，选择一个来源即可。
 
-**GitHub**
+**GitHub 主仓库（默认）**
 
 ```bash
 git clone https://github.com/RainFoam0693/JiuLi-Plugin.git plugins/JiuLi-Plugin
@@ -52,7 +54,7 @@ pnpm install
 ```
 
 <details>
-<summary><b>使用 GitCode 国内仓库</b></summary>
+<summary><b>使用 GitCode 国内加速镜像</b></summary>
 
 ```bash
 git clone https://gitcode.com/RainFoam0693/JiuLi-Plugin.git plugins/JiuLi-Plugin
@@ -77,13 +79,22 @@ git -C plugins/JiuLi-Plugin pull --ff-only
 pnpm install
 ```
 
-更新后重启机器人。已有实例请先停止机器人，将插件目录改为 `JiuLi-Plugin`，保留目录中的资源文件，并确认只安装了一份插件。
+更新会沿用安装时选择的仓库来源，完成后重启机器人。GitCode 镜像可能存在同步延迟，需要最新改动时可使用 GitHub。
 
+已有实例请先停止机器人，将插件目录改为 `JiuLi-Plugin`，保留目录中的资源文件，并确认只安装了一份插件。
 
-如果旧实例仍指向原仓库地址，可选择当前来源更新 `origin`：
+需要切换下载来源时，选择以下一条命令执行即可。
+
+**切换至 GitHub 主仓库：**
 
 ```bash
 git -C plugins/JiuLi-Plugin remote set-url origin https://github.com/RainFoam0693/JiuLi-Plugin.git
+```
+
+**切换至 GitCode 国内镜像：**
+
+```bash
+git -C plugins/JiuLi-Plugin remote set-url origin https://gitcode.com/RainFoam0693/JiuLi-Plugin.git
 ```
 
 </details>
@@ -205,7 +216,7 @@ QQ 档案以协议返回的公开资料为准；图片渲染失败时会回退�
 
 反馈问题时请附上**使用指令、运行环境、相关日志与复现步骤**，并隐藏账号凭据。
 
-[GitHub Issues](https://github.com/RainFoam0693/JiuLi-Plugin/issues) · [GitCode Issues](https://gitcode.com/RainFoam0693/JiuLi-Plugin/issues)
+[前往 GitHub 提交问题](https://github.com/RainFoam0693/JiuLi-Plugin/issues)
 
 ## 致谢
 
@@ -219,6 +230,6 @@ QQ 档案以协议返回的公开资料为准；图片渲染失败时会回退�
 
 常用工具，一处就绪。
 
-[GitHub](https://github.com/RainFoam0693/JiuLi-Plugin) · [GitCode](https://gitcode.com/RainFoam0693/JiuLi-Plugin)
+[GitHub 主仓库](https://github.com/RainFoam0693/JiuLi-Plugin) · [GitCode 国内镜像](https://gitcode.com/RainFoam0693/JiuLi-Plugin)
 
 </div>
