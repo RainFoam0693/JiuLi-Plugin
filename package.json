@@ -1,7 +1,7 @@
 {
   "name": "JiuLi-Plugin",
   "type": "module",
-  "author": "TimeRainStarSky",
+  "author": "RainFoam0693",
   "dependencies": {
     "@highlightjs/cdn-assets": "^11.10.0",
     "@undecaf/zbar-wasm": "0.11.0",

@@ -15,14 +15,14 @@ function getYunzaiVersion() {
     const pkgPath = path.join(process.cwd(), 'package.json')
     if (fs.existsSync(pkgPath)) {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
-      const name = pkg.name || 'yunzai'
-      const version = pkg.version || '3.1.7'
+      const name = pkg.name || 'unknown'
+      const version = pkg.version || 'unknown'
       // 格式化名称: trss-yunzai -> TRSS-Yunzai, miao-yunzai -> Miao-Yunzai
       const displayName = name.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('-')
       return { name: displayName, version }
     }
   } catch (e) {}
-  return { name: 'Yunzai', version: '3.1.7' }
+  return { name: 'unknown', version: 'unknown' }
 }
 
 // 背景图获取（yenai state 逻辑：远程优先，失败用本地 fallback）
@@ -140,7 +140,7 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
     logger.mark(`[远程命令] 执行Js：${logger.blue(cmd)}`)
     const ret = await this.evalSync(cmd, data => Bot.String(data))
-    logger.mark(`[远程命令]\n${ret.stdout}\n${logger.red(ret.error?.stack)}`)
+    logger.mark(`[远程命令]\n${ret.stdout ?? ""}${ret.error ? `\n${logger.red(ret.error.stack)}` : ""}`)
 
     if (!ret.stdout && !ret.error)
       return this.reply("命令执行完成，没有返回值", true)
@@ -157,7 +157,8 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
     logger.mark(`[远程命令] 执行Js：${logger.blue(cmd)}`)
     const ret = await this.evalSync(cmd, data => Bot.Loging(data))
-    logger.mark(`[远程命令]\n${ret.stdout}\n${logger.red(ret.error?.stack)}`)
+    logger.mark(`[远程命令]\n${ret.stdout ?? ""}${ret.error ? `\n${logger.red(ret.error.stack)}` : ""}`)
+
 
     if (!ret.stdout && !ret.error)
       return this.reply("命令执行完成，没有返回值", true)
