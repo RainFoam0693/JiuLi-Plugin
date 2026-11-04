@@ -218,6 +218,10 @@ QQ 档案以协议返回的公开资料为准；图片渲染失败时会回退�
 
 [前往 GitHub 提交问题](https://github.com/RainFoam0693/JiuLi-Plugin/issues)
 
+## 开源许可
+
+本项目采用 [GNU GPL v3.0](LICENSE) 开源许可证。
+
 ## 致谢
 
 基于 **TimeRainStarSky** 的插件代码框架进行修改扩增。图片日志改编自 **狐** 的脚本，原作者说明保留在代码中。感谢 [JiuLi](https://github.com/HL-z7/JiuLi) 与相关宿主、开源工具的支持。
