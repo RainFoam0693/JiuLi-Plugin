@@ -26,12 +26,15 @@ const DEFAULT_CONFIG = {
   gitTimeout: 60000,
   auth: {
     'github.com': {
+      username: '',
       token: ''
     },
     'gitee.com': {
+      username: '',
       token: ''
     },
     'gitcode.com': {
+      username: '',
       token: ''
     }
   }
@@ -147,7 +150,7 @@ function checkConfigFileChanges() {
     if (!fs.existsSync(CONFIG_FILE)) return
 
     const currentModified = fs.statSync(CONFIG_FILE).mtimeMs
-    if (currentModified > lastConfigModified) {
+    if (currentModified !== lastConfigModified) {
       logger.mark('[插件管理器] 检测到配置文件变化，重新加载配置')
       CONFIG = initConfigFile()
       lastConfigModified = currentModified
@@ -249,6 +252,10 @@ export class PluginManager extends plugin {
       )
 
       if (!name) return e.reply('请提供插件名称或 Git 链接')
+      // 零宽字符可能使地址规则未命中；规范化后重新交给 URL 安装逻辑。
+      if (/^(https?:\/\/|git@)/.test(name)) {
+        return this.installPluginFromUrl({ ...e, msg: `#安装插件 ${name}${hasSeparator ? `,${branch}` : ''}` })
+      }
       if (hasSeparator && !branch) return e.reply('请在逗号后提供要克隆的分支名称')
       if (/[\x00-\x1F\x7F]/.test(branch)) return e.reply('分支名称不能包含控制字符')
 
@@ -344,10 +351,11 @@ export class PluginManager extends plugin {
   /* ================= 工具函数 ================= */
 
   /**
-   * 解析“安装目标,分支名”格式；未提供逗号时分支为空。
+   * 解析“安装目标,分支名”，兼容中文逗号及聊天复制带入的零宽字符。
    */
   parseInstallInput(input) {
-    const separatorIndex = input.indexOf(',')
+    input = String(input).replace(/[\u200B-\u200F\u2060\uFEFF]/g, '').trim()
+    const separatorIndex = input.search(/[,，]/)
     return {
       target: (separatorIndex === -1 ? input : input.slice(0, separatorIndex)).trim(),
       branch: separatorIndex === -1 ? '' : input.slice(separatorIndex + 1).trim(),
@@ -381,7 +389,7 @@ export class PluginManager extends plugin {
   }
 
   /**
-   * 构建OAuth2认证URL（统一使用oauth2格式）
+   * 构建 HTTPS 认证地址，支持按平台配置用户名与个人访问令牌
    */
   buildOAuth2AuthUrl(url) {
     try {
@@ -390,8 +398,8 @@ export class PluginManager extends plugin {
       const authConfig = getAuthConfig()
       const cfg = authConfig[host]
       if (!cfg?.token || cfg.token === '秘钥') return null
-      // 统一使用 oauth2:TOKEN 格式，适用于所有平台
-      return `https://oauth2:${encodeURIComponent(cfg.token)}@${u.host}${u.pathname}${u.pathname.endsWith('.git') ? '' : '.git'}`
+      const username = cfg.username?.trim() || 'oauth2'
+      return `https://${encodeURIComponent(username)}:${encodeURIComponent(cfg.token)}@${u.host}${u.pathname}${u.pathname.endsWith('.git') ? '' : '.git'}`
     } catch (error) {
       logger.error(`[插件管理器] 构建OAuth2认证URL失败: ${error.message}`)
       return null
