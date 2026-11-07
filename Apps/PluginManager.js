@@ -24,6 +24,7 @@ const DEFAULT_CONFIG = {
   npmRegistry: 'https://registry.npmmirror.com',
   protectedPlugins: ['example', 'genshin', 'system', 'other', 'adapter', 'JiuLi-Plugin'],
   gitTimeout: 60000,
+  cloneProtocol: 'https',
   auth: {
     'github.com': {
       username: '',
@@ -301,9 +302,14 @@ export class PluginManager extends plugin {
         return e.reply('分支名称不能包含控制字符')
       }
 
+      checkConfigFileChanges()
       const ssh = /^git@([^:]+):(.+)$/.exec(rawUrl)
       const validated = repositoryUrl(ssh ? `https://${ssh[1]}/${ssh[2]}` : rawUrl)
-      rawUrl = ssh ? `git@${ssh[1]}:${validated.url.split('/').slice(3).join('/')}.git` : validated.url
+      // 统一按锅巴选择的协议构造地址，名称安装和粘贴地址使用同一配置。
+      const repository = new URL(validated.url)
+      rawUrl = CONFIG.cloneProtocol === 'ssh'
+        ? `git@${repository.hostname}:${repository.pathname.slice(1)}.git`
+        : `${validated.url}.git`
       const cleanUrl = validated.url
       const pluginName = this.extractPluginNameFromUrl(cleanUrl)
       const targetPath = path.join(CONFIG.pluginsDir, pluginName)

@@ -17,24 +17,31 @@ export function createAuthConfigInfo(file = configFile) {
     return value
   }
   return {
-    schemas: platforms.flatMap(([id, title]) => [
+    schemas: [
+      { label: '安装方式', component: 'SOFT_GROUP_BEGIN' },
+      { field: 'cloneProtocol', label: 'Git 克隆方式', component: 'Select', componentProps: { options: [{ label: 'HTTPS（用户名 / 访问令牌）', value: 'https' }, { label: 'SSH（本机 SSH 密钥）', value: 'ssh' }] }, bottomHelpMessage: '对后续新安装生效。SSH 使用机器人运行账号的本机密钥，不使用下方访问令牌；已有仓库地址不变。' },
+      ...platforms.flatMap(([id, title]) => [
       { label: title, component: 'SOFT_GROUP_BEGIN' },
       { field: `${id}Username`, label: '用户名', component: 'Input', bottomHelpMessage: '填写该平台账户用户名；留空沿用安装器默认认证用户名。', componentProps: { autocomplete: 'off' } },
       { field: `${id}Token`, label: '访问令牌 / 密钥', component: 'InputPassword', bottomHelpMessage: '填写个人访问令牌（PAT），不是 SSH 私钥。已有令牌不回显，留空保留。仅用于 HTTPS 仓库认证。', componentProps: { autocomplete: 'new-password' } },
       { field: `${id}ClearToken`, label: '清除已保存密钥', component: 'Switch', bottomHelpMessage: '开启后保存可清除；清除与填写新密钥不能同时操作。' }
-    ]),
+    ])],
     getConfigData() {
       const config = read()
-      return Object.fromEntries(platforms.flatMap(([id, , host]) => [
+      return { cloneProtocol: config.cloneProtocol === 'ssh' ? 'ssh' : 'https', ...Object.fromEntries(platforms.flatMap(([id, , host]) => [
         [`${id}Username`, config.auth?.[host]?.username || ''],
         [`${id}Token`, ''],
         [`${id}ClearToken`, false]
-      ]))
+      ])) }
     },
     setConfigData(data, { Result }) {
       let temporary
       try {
         const config = read()
+        if (Object.hasOwn(data, 'cloneProtocol')) {
+          if (!['https', 'ssh'].includes(data.cloneProtocol)) throw new Error('请选择 HTTPS 或 SSH 克隆方式')
+          config.cloneProtocol = data.cloneProtocol
+        }
         config.auth ||= {}
         for (const [id, , host] of platforms) {
           const current = { ...(config.auth[host] || {}) }
@@ -59,7 +66,7 @@ export function createAuthConfigInfo(file = configFile) {
         temporary = `${file}.${randomUUID()}.tmp`
         fs.writeFileSync(temporary, stringify(config), { mode: 0o600, flag: 'wx' })
         fs.renameSync(temporary, file)
-        return Result.ok({}, '已保存，下次 HTTPS 安装时生效')
+        return Result.ok({}, '已保存，下次安装时生效')
       } catch (error) {
         if (temporary && fs.existsSync(temporary)) fs.unlinkSync(temporary)
         return Result.error(error.message)
