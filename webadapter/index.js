@@ -2,6 +2,8 @@ import path from 'node:path'
 import { PluginRepositories } from '../Model/PluginRepositories.js'
 const key = Symbol.for('JiuLi-Plugin.repositories-panel')
 export function init(ctx) {
+  // 原版锅巴不提供扩展页能力；不注册接口、不创建监听器。
+  if (typeof ctx?.registerPage !== 'function' || typeof ctx?.registerApi !== 'function') return false
   globalThis[key]?.close()
   const repositories = new PluginRepositories(path.join(process.cwd(), 'plugins'), process.cwd())
   globalThis[key] = repositories
@@ -9,6 +11,16 @@ export function init(ctx) {
   ctx.registerApi('get', '/repositories', async (_req,res) => {
     try { res.json({ok:true,result:await repositories.list()}) }
     catch { res.status(500).json({ok:false,message:'无法读取插件仓库列表'}) }
+  })
+  ctx.registerApi('post', '/repositories/auth', async (req,res) => {
+    if (req.headers?.['sec-fetch-site'] === 'cross-site') return res.status(403).json({ok:false,message:'不允许跨站操作'})
+    try { res.json({ok:true,result:await repositories.setAuth(req.body?.name,req.body?.enabled,req.body?.version,req.body?.kind)}) }
+    catch (e) { res.status(400).json({ok:false,message:e.message.includes('Command failed') ? 'Git 配置操作失败，请检查目录权限' : e.message}) }
+  })
+  ctx.registerApi('post', '/repositories/proxy', async (req,res) => {
+    if (req.headers?.['sec-fetch-site'] === 'cross-site') return res.status(403).json({ok:false,message:'不允许跨站操作'})
+    try { res.json({ok:true,result:await repositories.setProxy(req.body?.name,req.body?.enabled,req.body?.version,req.body?.kind)}) }
+    catch (e) { res.status(400).json({ok:false,message:e.message.includes('Command failed') ? 'Git 配置操作失败，请检查目录权限' : e.message}) }
   })
   ctx.registerApi('post', '/repositories/switch', async (req,res) => {
     // 扩展接口由锅巴统一鉴权；额外拒绝跨站写请求。

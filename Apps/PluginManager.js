@@ -3,6 +3,8 @@ import { createRequire } from 'module'
 const require = createRequire(import.meta.url)
 const { execFile } = require('child_process')
 import { fetchPluginIndex, repositoryUrl } from '../Model/PluginIndex.js'
+import { detectRepositoryAccess } from '../Model/RepositoryAccess.js'
+import { publicCloneProxy } from '../Model/CloneProxy.js'
 import { buildSearchPages, buildMarketPage, buildInstalledPage } from '../Model/PluginSearch.js'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import { randomUUID } from 'node:crypto'
@@ -25,6 +27,8 @@ const DEFAULT_CONFIG = {
   protectedPlugins: ['example', 'genshin', 'system', 'other', 'adapter', 'JiuLi-Plugin'],
   gitTimeout: 60000,
   cloneProtocol: 'https',
+  httpsProxyEnabled: false,
+  httpsProxyUrl: '',
   auth: {
     'github.com': {
       username: '',
@@ -184,6 +188,7 @@ export class PluginManager extends plugin {
       rule: [
         { reg: '^#JLPM:[a-f0-9]{24}$', fnc: 'handleInstallerCallback' },
         { reg: '^#插件安装器帮助$', fnc: 'installerHelp' },
+        { reg: '^#?切换\\s*([Ss][Ss][Hh]|[Hh][Tt][Tt][Pp][Ss])\\s*克隆$', fnc: 'switchCloneProtocol', permission: 'master' },
         { reg: '^#插件(列表|市场|大全)(\\s*\\d+)?$', fnc: 'showPluginList' },
         { reg: '^#安装插件\\s*(https?://|git@).+$', fnc: 'installPluginFromUrl' },
         { reg: '^#安装插件(.*)$', fnc: 'installPluginByName' },
@@ -199,6 +204,31 @@ export class PluginManager extends plugin {
         { reg: '^#插件管理器重载配置$', fnc: 'reloadConfigCommand' }
       ]
     })
+  }
+
+  /** 与锅巴共用默认克隆方式，只修改协议字段，保留密钥和其他配置。 */
+  async switchCloneProtocol(e) {
+    if (!this.checkPermission(e)) return false
+    const match = /^#?切换\s*(ssh|https)\s*克隆$/i.exec(e.msg || '')
+    if (!match) return false
+    const protocol = match[1].toLowerCase()
+    let temporary
+    try {
+      const saved = fs.existsSync(CONFIG_FILE) ? parse(fs.readFileSync(CONFIG_FILE, 'utf8')) : { ...DEFAULT_CONFIG }
+      if (!saved || typeof saved !== 'object' || Array.isArray(saved)) throw new Error('配置文件格式不正确')
+      saved.cloneProtocol = protocol
+      fs.mkdirSync(path.dirname(CONFIG_FILE), { recursive: true })
+      temporary = `${CONFIG_FILE}.${randomUUID()}.tmp`
+      fs.writeFileSync(temporary, stringify(saved), { mode: 0o600, flag: 'wx' })
+      fs.renameSync(temporary, CONFIG_FILE)
+      CONFIG = { ...CONFIG, ...saved }
+      lastConfigModified = fs.statSync(CONFIG_FILE).mtimeMs
+    } catch (error) {
+      if (temporary && fs.existsSync(temporary)) fs.unlinkSync(temporary)
+      logger.error(`[插件管理器] 切换克隆方式失败：${error.message}`)
+      return e.reply('切换失败，请检查插件配置文件格式与写入权限')
+    }
+    return e.reply(`默认克隆方式已切换为 ${protocol.toUpperCase()}，下次新安装生效。`)
   }
 
   /** 原生按钮回调经 QQBot 的 INTERACTION_CREATE 事件进入，校验后调用业务方法。 */
@@ -234,7 +264,7 @@ export class PluginManager extends plugin {
   async installerHelp(e) {
     if (!this.checkPermission(e)) return false
     return replyWithInstallerButtons(e,
-      '插件安装器\n#搜索插件关键词：查找插件\n#插件列表：查看市场\n#已安装插件：查看本地插件\n#安装插件名称或仓库地址：安装插件\n官机可点击搜索卡片下的安装按钮，按钮仅当前主人可用，20 分钟后失效。')
+      '插件安装器\n#搜索插件关键词：查找插件\n#插件列表：查看市场\n#已安装插件：查看本地插件\n#切换ssh克隆 / #切换https克隆：切换默认克隆方式\n#安装插件名称或仓库地址：安装插件\n官机可点击搜索卡片下的安装按钮，按钮仅当前主人可用，20 分钟后失效。')
   }
 
   /* ================= 插件列表识别与安装逻辑 ================= */
@@ -319,14 +349,19 @@ export class PluginManager extends plugin {
       }
 
       let finalUrl = rawUrl
+      const host = repository.hostname === 'gitcode.net' ? 'gitcode.com' : repository.hostname
+      const auth = getAuthConfig()[host] || {}
+      const access = await detectRepositoryAccess(cleanUrl, auth)
+      if (access === 'authenticated') {
+        finalUrl = this.buildOAuth2AuthUrl(`${cleanUrl}.git`)
+        if (!finalUrl) return e.reply('仓库需要认证，请先在锅巴中配置对应平台的用户名和访问令牌')
+        await e.reply('该仓库需要认证，已自动切换为 HTTPS，使用已配置的用户名和令牌。')
+      }
 
-      // 针对识别到的私库链接应用OAuth2认证方案
-      if (this.isPrivateRepo(rawUrl) && !rawUrl.startsWith('git@')) {
-        const authUrl = this.buildOAuth2AuthUrl(rawUrl)
-        if (authUrl) {
-            finalUrl = authUrl
-            await e.reply('检测到私库，已自动应用 OAuth2 认证通道...')
-        }
+      const proxyUrl = publicCloneProxy(`${cleanUrl}.git`, CONFIG, access)
+      if (proxyUrl) {
+        finalUrl = proxyUrl
+        await e.reply('公开仓库使用 HTTPS 反代克隆。')
       }
 
       await e.reply(effectiveBranch
@@ -334,11 +369,11 @@ export class PluginManager extends plugin {
         : `[${pluginName}] 开始下载...`)
       let result = await this.gitClone(finalUrl, targetPath, effectiveBranch)
 
-      // 如果失败尝试OAuth2认证重试
-      if (result.error && rawUrl.startsWith('http')) {
-        const authUrl = this.buildOAuth2AuthUrl(rawUrl)
+      // 访问性无法确认且首次克隆失败时，允许使用已配置令牌做一次 HTTPS 重试。
+      if (result.error && access === 'unknown' && auth.token && auth.token !== '秘钥') {
+        const authUrl = this.buildOAuth2AuthUrl(`${cleanUrl}.git`)
         if (authUrl) {
-          await e.reply('尝试OAuth2认证通道重试...')
+          await e.reply('首次克隆失败，尝试已配置的 HTTPS 认证；这不代表已确认仓库为私库。')
           result = await this.gitClone(authUrl, targetPath, effectiveBranch)
         }
       }
@@ -347,6 +382,10 @@ export class PluginManager extends plugin {
         return e.reply(`安装失败：\n${this.maskSecret(result.stderr || result.error.message)}`)
       }
 
+      if (proxyUrl) {
+        const restored = await this.runCommand('git', ['remote', 'set-url', 'origin', `${cleanUrl}.git`], { cwd: targetPath })
+        if (restored.error) return e.reply(`[${pluginName}] 已下载，但设置平台原始远端地址失败，请检查 Git 配置权限后再安装依赖。`)
+      }
       return await this.installDependencies(pluginName, e)
     } catch (error) {
       logger.error(`[插件管理器] 从URL安装插件失败: ${error.message}`)
@@ -400,7 +439,8 @@ export class PluginManager extends plugin {
   buildOAuth2AuthUrl(url) {
     try {
       const u = new URL(url)
-      const host = u.hostname.toLowerCase().replace('www.', '')
+      const hostname = u.hostname.toLowerCase().replace('www.', '')
+      const host = hostname === 'gitcode.net' ? 'gitcode.com' : hostname
       const authConfig = getAuthConfig()
       const cfg = authConfig[host]
       if (!cfg?.token || cfg.token === '秘钥') return null
@@ -426,12 +466,27 @@ export class PluginManager extends plugin {
       // 彻底解决 "could not read Username"：
       // 1. -c credential.helper='' 禁用系统弹出的凭据管理器
       // 2. GIT_TERMINAL_PROMPT=0 禁用终端交互询问
+      const env = { ...process.env, GIT_TERMINAL_PROMPT: '0' }
+      if (url.startsWith('https://')) {
+        const remote = new URL(url)
+        if (remote.username || remote.password) {
+          const credentials = `${decodeURIComponent(remote.username)}:${decodeURIComponent(remote.password)}`
+          remote.username = ''; remote.password = ''
+          url = remote.href
+          // 凭据仅经子进程环境传递，避免写入 origin 或出现在 Git 错误命令中。
+          const inheritedCount = Number(env.GIT_CONFIG_COUNT || 0)
+          if (!Number.isInteger(inheritedCount) || inheritedCount < 0 || inheritedCount > 100) throw new Error('Git 环境配置数量无效')
+          env.GIT_CONFIG_COUNT = String(inheritedCount + 1)
+          env[`GIT_CONFIG_KEY_${inheritedCount}`] = `http.${url}.extraHeader`
+          env[`GIT_CONFIG_VALUE_${inheritedCount}`] = `Authorization: Basic ${Buffer.from(credentials).toString('base64')}`
+        }
+      }
       const args = ['-c', 'credential.helper=', 'clone', '--depth=1']
       if (branch) args.push('--branch', branch, '--single-branch')
       args.push(url, targetPath)
 
       return await this.runCommand('git', args, {
-        env: { ...process.env, GIT_TERMINAL_PROMPT: '0' },
+        env,
         timeout: CONFIG.gitTimeout
       })
     } catch (error) {

@@ -28,7 +28,23 @@ async function refresh() {
         if(plugin.pushProtocol!==plugin.protocol)info.append(text('div',`推送：${plugin.pushProtocol.toUpperCase()}`,'repo'))
         const target=plugin.protocol==='ssh'?'https':'ssh', button=text('button',plugin.supported?`切换为 ${target.toUpperCase()}`:'暂不支持')
         button.disabled=!plugin.supported;button.onclick=()=>switchRepo(plugin,target,button)
-        row.append(info,button);(plugin.kind==='core'?coreList:list).append(row)
+        const actions=text('div','','actions'), label=text('label','','proxy-switch')
+        const toggle=document.createElement('input');toggle.type='checkbox';toggle.setAttribute('role','switch')
+        toggle.setAttribute('aria-label',`${plugin.displayName || plugin.name} 注入反代`)
+        toggle.checked=plugin.proxyEnabled===true;toggle.disabled=!plugin.supported || plugin.protocol!=='https' || plugin.authEnabled===true
+        label.title=toggle.disabled?'SSH 或已注入密钥的仓库不支持反代':'使用锅巴中配置的反代地址，仅对公开仓库启用'
+        label.append(toggle,text('span','','switch-track'),text('span','注入反代'))
+        toggle.onchange=()=>toggleProxy(plugin,toggle)
+        const authLabel=text('label','','proxy-switch'), authToggle=document.createElement('input')
+        authToggle.type='checkbox';authToggle.setAttribute('role','switch')
+        authToggle.setAttribute('aria-label',`${plugin.displayName || plugin.name} 注入密钥与用户名`)
+        authToggle.checked=plugin.authEnabled===true
+        authToggle.disabled=!plugin.supported || plugin.protocol!=='https' || plugin.proxyEnabled===true
+        authLabel.title=authToggle.disabled?'请使用 HTTPS 直连并关闭反代':'使用锅巴保存的访问令牌（不是SSH私钥），保存在本地Git配置，仅对该仓库地址生效'
+        authLabel.append(authToggle,text('span','','switch-track'),text('span','注入密钥与用户名'))
+        authToggle.onchange=()=>toggleAuth(plugin,authToggle)
+        actions.append(label,authLabel,button)
+        row.append(info,actions);(plugin.kind==='core'?coreList:list).append(row)
       }
       if(!coreList.children.length) coreList.append(text('p','未检测到机器人 Git 仓库','empty'))
       if(!list.children.length) list.append(text('p','暂无 Git 插件','empty'))
@@ -46,6 +62,34 @@ async function switchRepo(plugin,protocol,button){
     snapshot='';status.className='';status.textContent=`${plugin.displayName || plugin.name} 已切换为 ${protocol.toUpperCase()}`
   }catch(error){status.className='error';status.textContent=error.message}
   finally{busy=false;button.disabled=false;button.textContent=`切换为 ${protocol.toUpperCase()}`;await refresh()}
+}
+async function toggleProxy(plugin,toggle){
+  if(busy){toggle.checked=plugin.proxyEnabled===true;return}
+  busy=true;toggle.disabled=true
+  let errorMessage=''
+  try{
+    await request('/repositories/proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:plugin.name,kind:plugin.kind,version:plugin.version,enabled:toggle.checked})})
+    snapshot=''
+  }catch(error){errorMessage=error.message;toggle.checked=plugin.proxyEnabled===true}
+  finally{
+    busy=false;toggle.disabled=plugin.protocol!=='https' || !plugin.supported
+    await refresh()
+    if(errorMessage){status.className='error';status.textContent=errorMessage}
+  }
+}
+async function toggleAuth(plugin,toggle){
+  if(busy){toggle.checked=plugin.authEnabled===true;return}
+  busy=true;toggle.disabled=true
+  let errorMessage=''
+  try{
+    await request('/repositories/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:plugin.name,kind:plugin.kind,version:plugin.version,enabled:toggle.checked})})
+    snapshot=''
+  }catch(error){errorMessage=error.message;toggle.checked=plugin.authEnabled===true}
+  finally{
+    busy=false;toggle.disabled=plugin.protocol!=='https' || !plugin.supported || plugin.proxyEnabled===true
+    await refresh()
+    if(errorMessage){status.className='error';status.textContent=errorMessage}
+  }
 }
 document.getElementById('refresh').onclick=()=>{snapshot='';refresh()}
 refresh();setInterval(refresh,3000)
