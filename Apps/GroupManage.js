@@ -39,7 +39,7 @@ async function officialMute(e, target, seconds) {
   const sdk = e.bot?.sdk
   if (typeof sdk?.setGroupMemberMute !== 'function') throw new Error('当前 QQBot SDK 未提供群禁言接口')
   const members = seconds > 0
-    ? [{ op: 'add', member_openid: target, mute_expire_at: String(Math.floor(Date.now() / 1000) + seconds) }]
+    ? [{ op: 'add', member_openid: target, mute_expire_at: new Date(Date.now() + seconds * 1000).toISOString() }]
     : [{ op: 'del', member_openid: target }]
   return sdk.setGroupMemberMute(groupId, members)
 }
