@@ -56,7 +56,7 @@ export class GroupManage extends plugin {
       name: 'JiuLi 群管理',
       dsc: '兼容 ICQQ 与 QQBot 官机的群禁言、解禁及踢人',
       event: 'message.group',
-      priority: 1000,
+      priority: 400,
       rule: [
         { reg: '^#禁言(?:\\s+.+)?$', fnc: 'mute' },
         { reg: '^#解禁(?:\\s+[^\\s]+)?$', fnc: 'unmute' },
