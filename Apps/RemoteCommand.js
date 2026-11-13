@@ -68,7 +68,8 @@ let inspectCmd = (cmd, data) => data.includes("\n") ?
 let langCmd = "sh"
 
 if (process.platform == "win32") {
-  prompt = cmd => [`powershell -EncodedCommand ${Buffer.from(`$ProgressPreference="SilentlyContinue";[Console]::OutputEncoding=[System.Text.Encoding].UTF8;prompt;${cmd}`, "utf-16le").toString("base64")}`]
+  // 固定 PowerShell、管道及传统控制台命令的输出编码为 UTF-8。
+  prompt = cmd => [`powershell -NoLogo -NoProfile -EncodedCommand ${Buffer.from(`$ProgressPreference="SilentlyContinue";chcp 65001 > $null;[Console]::InputEncoding=[System.Text.Encoding]::UTF8;[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false);$OutputEncoding=[System.Text.UTF8Encoding]::new($false);prompt;${cmd}`, "utf-16le").toString("base64")}`, { encoding: "buffer" }]
   inspectCmd = (cmd, data) => data.includes("\n") ?
     data.replace(/\r\n/g, "\n").replace(/ ?\n/, ` ${cmd}\n`) : `${data} ${cmd}`
   hljs.registerLanguage("powershell", (await import("@highlightjs/cdn-assets/es/languages/powershell.min.js")).default)
@@ -182,6 +183,10 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
      if(!this.e.isMaster)return false
     const cmd = this.e.msg.replace(/rcp?/, "").trim()
     const ret = await Bot.exec(...prompt(cmd))
+    if (process.platform == "win32") {
+      ret.stdout = Buffer.isBuffer(ret.raw?.stdout) ? ret.raw.stdout.toString("utf8").trim() : ret.stdout
+      ret.stderr = Buffer.isBuffer(ret.raw?.stderr) ? ret.raw.stderr.toString("utf8").trim() : ret.stderr
+    }
 
     if (!ret.stdout && !ret.stderr && !ret.error)
       return this.reply("命令执行完成，没有返回值", true)
@@ -198,6 +203,10 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
     const baiduLatency = await getBaiduLatency()
     const cmd = this.e.msg.replace("rcp", "").trim()
     const ret = await Bot.exec(...prompt(cmd))
+    if (process.platform == "win32") {
+      ret.stdout = Buffer.isBuffer(ret.raw?.stdout) ? ret.raw.stdout.toString("utf8").trim() : ret.stdout
+      ret.stderr = Buffer.isBuffer(ret.raw?.stderr) ? ret.raw.stderr.toString("utf8").trim() : ret.stderr
+    }
 
     if (!ret.stdout && !ret.stderr && !ret.error)
       return this.reply("命令执行完成，没有返回值", true)
