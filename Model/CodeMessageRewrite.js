@@ -57,11 +57,17 @@ export function rewriteCodeMessage(message) {
   return [...replies, { type: 'markdown', data: { content } }]
 }
 
-const key = Symbol.for('JiuLi-Plugin.code-message-rewrite')
+// Bot 在 Yunzai 中可能是会把未知属性转发给账号的 Proxy；
+// 不要用 Symbol 属性访问它，否则不同平台/系统下都会触发隐式字符串转换。
+const botStates = new WeakMap()
 /** 在适配器发送前处理 node，避免合并转发先被协议编码为 XML。 */
 export function installCodeRewrite(bot = globalThis.Bot) {
-  if (!bot) return
-  const state = bot[key] ||= { wrappers: new WeakSet() }
+  if (!bot || (typeof bot !== 'object' && typeof bot !== 'function')) return
+  let state = botStates.get(bot)
+  if (!state) {
+    state = { wrappers: new WeakSet() }
+    botStates.set(bot, state)
+  }
   state.rewrite = rewriteCodeMessage
   // 让热更新前已挂在野机适配器上的包装器也立即停止改写。
   state.route = e => e.bot?.adapter?.name === 'QQBot'
