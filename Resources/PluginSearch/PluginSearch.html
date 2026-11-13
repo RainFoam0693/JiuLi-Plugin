@@ -4,37 +4,121 @@
 <meta charset="UTF-8">
 <title>JiuLi · 插件探索</title>
 <style>
-:root{--ink:#16324f;--muted:#66819b;--line:rgba(94,145,185,.22);--sky:#eaf7ff;--aqua:#dff8fa;--blue:#4c9fd1;--teal:#4dabb0;--glass:rgba(255,255,255,.48);--white:rgba(255,255,255,.9)}
-*{box-sizing:border-box}html,body{margin:0;padding:0;width:100%;min-height:100%}body{width:100vw;min-width:1040px;min-height:100vh;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:#d8efff}#container{position:relative;isolation:isolate;width:100vw;min-width:1040px;min-height:100vh;padding:42px;background:transparent;overflow:hidden}
-.page-bg{position:absolute;inset:0;width:100%;min-height:100%;z-index:-1;pointer-events:none;background-image:url("https://t.alcy.cc/mp");background-position:center center;background-size:cover;background-repeat:no-repeat}.brand,.hero,.search,.section-bar,.grid,.hint,.footer{position:relative;z-index:1}
-.brand{display:flex;align-items:center;justify-content:space-between;font-size:11px;letter-spacing:2.5px;color:#7090a8}.brand strong{font-weight:750;color:#327f9e;letter-spacing:3px}.brand span{padding:8px 13px;border:1px solid rgba(91,151,184,.28);border-radius:30px;background:rgba(255,255,255,.42);font-size:9px;letter-spacing:1.8px;color:#6c91a8;box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
-.hero{margin-top:29px;padding:29px 31px 26px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;border:1px solid rgba(255,255,255,.66);border-radius:25px;background:linear-gradient(135deg,rgba(255,255,255,.64),rgba(242,250,255,.48));box-shadow:0 18px 44px rgba(31,76,112,.20),inset 0 1px 0 rgba(255,255,255,.94),inset 0 -1px 0 rgba(16,48,78,.12);backdrop-filter:url(#liquid-glass) saturate(155%);-webkit-backdrop-filter:url(#liquid-glass) saturate(155%)}.eyebrow{font-size:10px;letter-spacing:3.1px;color:#489aab;margin-bottom:11px;font-weight:650}h1{margin:0;font-size:38px;line-height:1.2;font-weight:720;letter-spacing:-1.1px;color:#173b5d}.intro{margin:11px 0 0;color:#69839a;font-size:13px;letter-spacing:.15px}.counter{text-align:right;white-space:nowrap;padding:0 3px 1px}.counter strong{font-family:ui-rounded,-apple-system,sans-serif;font-size:48px;line-height:.95;letter-spacing:-2px;color:#398eb8}.counter span{display:block;font-size:9px;letter-spacing:1.5px;color:#7d9aad;margin-top:9px}
-.search{margin:18px 0 22px;padding:15px 18px;border:1px solid rgba(255,255,255,.70);border-radius:15px;background:rgba(255,255,255,.38);display:flex;gap:13px;align-items:flex-start;box-shadow:0 8px 22px rgba(69,131,166,.06),inset 0 1px 0 #fff}.search-icon{width:14px;height:14px;border:1.7px solid #54a6b7;border-radius:50%;margin-top:3px;position:relative;flex-shrink:0}.search-icon:after{content:"";width:6px;height:1.7px;background:#54a6b7;position:absolute;right:-5px;bottom:-2px;transform:rotate(45deg);border-radius:2px}.query{font-size:15px;color:#315d78;word-break:break-all;line-height:1.55;flex:1}.search-label{font-size:9px;letter-spacing:2px;color:#83a7b8;padding-top:5px;white-space:nowrap}
-.section-bar{display:flex;justify-content:space-between;align-items:center;color:#7a97aa;font-size:10px;margin:0 2px 11px}.section-bar b{color:#4c718b;font-weight:650;letter-spacing:.7px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.card{position:relative;isolation:isolate;min-width:0;padding:20px 21px 18px;border:1px solid rgba(255,255,255,.86);border-radius:19px;background:linear-gradient(145deg,rgba(255,255,255,.58),rgba(244,250,255,.42));backdrop-filter:url(#liquid-glass) saturate(155%);-webkit-backdrop-filter:url(#liquid-glass) saturate(155%);display:flex;flex-direction:column;min-height:287px;box-shadow:0 12px 30px rgba(34,76,108,.16),inset 0 1px 0 rgba(255,255,255,.96),inset 0 -1px 0 rgba(14,45,72,.10);overflow:hidden}.card>*{position:relative;z-index:3}.card:before{content:"";position:absolute;z-index:2;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(116deg,transparent 0%,rgba(255,255,255,.10) 17%,rgba(255,255,255,.46) 21%,rgba(255,255,255,.08) 25%,transparent 43%),linear-gradient(145deg,rgba(255,255,255,.10),transparent 34%);mix-blend-mode:screen}.card:after{content:"";position:absolute;z-index:1;inset:1px;pointer-events:none;border-radius:inherit;background:radial-gradient(ellipse at 6% 0%,rgba(255,255,255,.78),transparent 36%),radial-gradient(ellipse at 100% 100%,rgba(125,210,239,.18),transparent 42%);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 1px 0 0 rgba(255,255,255,.38),inset 0 -1px 0 rgba(255,255,255,.36)}@keyframes glassSweep{0%,55%{transform:translateX(-135%);opacity:0}62%{opacity:.9}80%,100%{transform:translateX(135%);opacity:0}}.hero{position:relative;overflow:hidden}.hero>*{position:relative;z-index:2}.hero:after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(112deg,transparent 18%,rgba(255,255,255,.10) 39%,rgba(255,255,255,.42) 43%,rgba(255,255,255,.08) 47%,transparent 66%);mix-blend-mode:screen}.card-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.number{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#78a1b7;font-size:10px;letter-spacing:1px}.tag{font-size:9px;letter-spacing:.4px;border-radius:30px;background:rgba(218,244,246,.78);color:#438b91;padding:5px 10px;max-width:78%;word-break:break-all;border:1px solid rgba(125,195,195,.18)}.card h2{font-size:19px;line-height:1.4;margin:13px 0 5px;letter-spacing:-.35px;color:#173853;text-shadow:0 1px 2px rgba(255,255,255,.8);overflow-wrap:anywhere}.author{font-size:10px;color:#8299aa;line-height:1.5;overflow-wrap:anywhere;letter-spacing:.15px}.description{font-size:11.5px;line-height:1.8;color:#405e76;text-shadow:0 1px 2px rgba(255,255,255,.7);margin:12px 0 15px;overflow-wrap:anywhere;white-space:pre-wrap}.card-bottom{margin-top:auto}.repository{display:flex;align-items:flex-start;gap:8px;font-size:9px;color:#8099a9;border-top:1px solid rgba(107,154,178,.17);padding:10px 0 9px;overflow-wrap:anywhere;line-height:1.6}.host{color:#5591a5;white-space:nowrap;font-weight:650}.repo{flex:1;min-width:0}.command-label{color:#6b9eaa;font-size:8px;letter-spacing:1.7px;margin-bottom:5px}.command{border:1px solid rgba(105,172,183,.25);background:linear-gradient(110deg,rgba(227,249,249,.78),rgba(231,245,255,.78));border-radius:9px;color:#367b89;padding:8px 10px;font:10px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,"PingFang SC",monospace;overflow-wrap:anywhere}
-.hint{font-size:10px;color:#68869b;line-height:1.75;margin:17px 0 0;padding:11px 14px;border:1px solid rgba(255,255,255,.48);border-left:3px solid #78c6cc;border-radius:10px;background:rgba(255,255,255,.38)}.footer{margin-top:21px;padding-top:14px;border-top:1px solid rgba(91,145,174,.19);display:flex;justify-content:space-between;gap:16px;font-size:9px;color:#829bab;line-height:1.7}.footer strong{color:#4e7991;font-weight:650}.source{margin-top:4px;font-size:8px;color:#91a8b6;overflow-wrap:anywhere}
+:root{--text:#1c2b3a;--text2:#3a4a5a;--text3:#5a6a7a;--shadow:0 1px 6px rgba(255,255,255,.5);--fill:rgba(255,255,255,.28)}
+:root[data-theme="dark"]{--text:#fff;--text2:rgba(255,255,255,.88);--text3:rgba(255,255,255,.65);--shadow:0 1px 8px rgba(0,0,0,.55);--fill:rgba(255,255,255,.12)}
+*{box-sizing:border-box}
+html{margin:0;padding:0;min-height:100%;background:#dbeafe}
+body{position:relative;isolation:isolate;width:100%;min-height:100vh;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;color:var(--text2);background:transparent;text-shadow:var(--shadow)}
+body::before{content:"";position:absolute;inset:0;width:100%;height:100%;min-height:100vh;z-index:-1;pointer-events:none;background:var(--page-background,url("https://t.alcy.cc/mp")) center center/cover no-repeat}
+.page{position:relative;width:100%;max-width:960px;margin:0 auto;padding:32px 24px 48px;box-sizing:border-box}
+.glass{position:relative;isolation:isolate;border-radius:28px;background:linear-gradient(145deg,rgba(255,255,255,.22),rgba(255,255,255,.07) 55%,rgba(255,255,255,.14));-webkit-backdrop-filter:blur(3px) saturate(1.5);backdrop-filter:blur(3px) saturate(1.5);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),inset 0 -1px 0 rgba(255,255,255,.28),inset 1px 0 0 rgba(255,255,255,.35),inset -1px 0 0 rgba(255,255,255,.2),inset 0 0 22px rgba(255,255,255,.14),0 12px 36px rgba(30,40,80,.14)}
+.glass::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1.2px;background:linear-gradient(135deg,rgba(255,255,255,.95),rgba(255,255,255,.08) 35%,rgba(255,255,255,.08) 65%,rgba(255,255,255,.7));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;z-index:2}
+.glass>*{position:relative;z-index:1}
+.glass::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(120% 55% at 18% 0%,rgba(255,255,255,.32),transparent 60%),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .12 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");background-blend-mode:normal,overlay;opacity:.9;-webkit-mask:none;z-index:0}
+.search,.hint,.tip{background:linear-gradient(145deg,rgba(255,255,255,.26),rgba(255,255,255,.10));-webkit-backdrop-filter:blur(8px) saturate(1.6);backdrop-filter:blur(8px) saturate(1.6);border:1px solid rgba(255,255,255,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 6px 20px rgba(30,40,80,.08);border-radius:18px}
+.card pre,.card code-block,.card .command,.tag{background:rgba(255,255,255,.32);border:1px solid rgba(255,255,255,.45);border-radius:14px}
+:root[data-theme="dark"] .glass{background:linear-gradient(145deg,rgba(255,255,255,.13),rgba(0,0,0,.14) 55%,rgba(255,255,255,.07))}
+.brand{display:flex;align-items:center;justify-content:space-between;color:var(--text2);font-size:11px;letter-spacing:.2em;text-transform:uppercase}.brand strong{font-weight:700;color:var(--text)}.brand span{padding:8px 13px;border-radius:999px;background:var(--fill);color:var(--text2);font-size:9px;letter-spacing:.16em}
+.hero{margin-top:24px;padding:25px 28px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px}.eyebrow{margin-bottom:10px;color:var(--text2);font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase}h1{margin:0;color:var(--text);font-size:34px;line-height:1.2;font-weight:700;letter-spacing:-.7px}.intro{margin:11px 0 0;color:var(--text2);font-size:13px;line-height:1.7}.counter{text-align:right;white-space:nowrap;padding:0 2px 1px}.counter strong{font-size:42px;line-height:1;font-weight:700;letter-spacing:-1px;color:var(--text)}.counter span{display:block;margin-top:8px;color:var(--text2);font-size:9px;letter-spacing:.16em}
+.search{margin:16px 0 20px;padding:13px 16px;display:flex;gap:12px;align-items:flex-start}.search-icon{width:14px;height:14px;border:1.5px solid var(--text3);border-radius:50%;margin-top:5px;position:relative;flex-shrink:0}.search-icon:after{content:"";width:6px;height:1.5px;background:var(--text3);position:absolute;right:-5px;bottom:-2px;transform:rotate(45deg);border-radius:2px}.query{flex:1;color:var(--text);font-size:15px;line-height:1.7;word-break:break-all}.search-label{padding-top:4px;color:var(--text2);font-size:9px;letter-spacing:.2em;white-space:nowrap}
+.section-bar{display:flex;justify-content:space-between;align-items:center;margin:0 2px 12px;color:var(--text2);font-size:11px;line-height:1.7}.section-bar b{color:var(--text);font-weight:700;letter-spacing:.08em}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.card{min-width:0;padding:20px;display:flex;flex-direction:column;min-height:280px}.card-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.number{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--text2);font-size:11px;letter-spacing:.08em}.tag{max-width:78%;padding:2px 10px;color:var(--text2);font-size:10px;letter-spacing:.04em;word-break:break-all}.card h2{margin:13px 0 5px;color:var(--text);font-size:20px;line-height:1.4;font-weight:700;letter-spacing:-.25px;overflow-wrap:anywhere}.author{color:var(--text2);font-size:11px;line-height:1.7;letter-spacing:.02em;overflow-wrap:anywhere}.description{margin:12px 0 15px;color:var(--text2);font-size:13px;line-height:1.7;overflow-wrap:anywhere;white-space:pre-wrap}.card-bottom{margin-top:auto}.repository{display:flex;align-items:flex-start;gap:8px;padding:10px 0 9px;color:var(--text2);font-size:11px;line-height:1.7;overflow-wrap:anywhere}.host{color:var(--text);white-space:nowrap;font-weight:700}.repo{flex:1;min-width:0}.command-label{margin-bottom:5px;color:var(--text2);font-size:9px;letter-spacing:.2em}.command{padding:9px 11px;color:var(--text);font:12px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,"PingFang SC",monospace;overflow-wrap:anywhere}
+.hint{margin-top:16px;padding:12px 14px;color:var(--text2);font-size:13px;line-height:1.7}.footer{display:flex;justify-content:space-between;gap:16px;margin-top:18px;padding-top:12px;color:var(--text2);font-size:10px;line-height:1.7}.footer strong{color:var(--text);font-weight:700}.source{margin-top:4px;color:var(--text2);font-size:9px;overflow-wrap:anywhere}
+@media(max-width:680px){.page{padding:24px 16px 40px}.grid{grid-template-columns:1fr}.hero{padding:21px;gap:12px}h1{font-size:28px}.counter strong{font-size:34px}.card{min-height:0}.footer{font-size:9px}}
 </style>
 </head>
 <body>
-<svg aria-hidden="true" width="0" height="0" style="position:absolute;pointer-events:none">
-  <filter id="liquid-glass" x="-40%" y="-40%" width="180%" height="180%" color-interpolation-filters="sRGB">
-    <feTurbulence type="fractalNoise" baseFrequency="0.001 0.001618" numOctaves="1" seed="3" result="glassNoise" />
-    <feGaussianBlur in="glassNoise" stdDeviation="38" result="smoothGlassNoise" />
-    <feDisplacementMap in="SourceGraphic" in2="smoothGlassNoise" scale="64" xChannelSelector="R" yChannelSelector="G" />
-  </filter>
-</svg>
-<div id="container">
-<div class="page-bg"></div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="defs"></defs></svg>
+<div class="page">
 <div class="brand"><strong>JIULI / PLUGINS</strong><span>PLUGIN DISCOVERY</span></div>
-<div class="hero"><div><div class="eyebrow">A CLEAR SKY FOR NEW IDEAS</div><h1>{{heading || '发现下一份可能。'}}</h1><p class="intro">在清透的卡片里，发现值得安装的新插件。</p></div><div class="counter"><strong>{{total}}</strong><span>{{counterLabel || '匹配结果 · MATCHES'}}</span></div></div>
+<div class="hero glass"><div><div class="eyebrow">A CLEAR SKY FOR NEW IDEAS</div><h1>{{heading || '发现下一份可能。'}}</h1><p class="intro">在清透的卡片里，发现值得安装的新插件。</p></div><div class="counter"><strong>{{total}}</strong><span>{{counterLabel || '匹配结果 · MATCHES'}}</span></div></div>
 <div class="search"><i class="search-icon"></i><div class="query">{{keyword}}</div><div class="search-label">SEARCH</div></div>
 <div class="section-bar"><b>{{viewLabel || '搜索结果'}} / {{page}} OF {{pages}}</b><span>展示 {{start}}–{{end}} · {{shown}} 项收录结果</span></div>
 <div class="grid">
 {{each plugins item}}
-<article class="card"><div class="card-top"><span class="number">{{item.number}}</span><span class="tag">{{item.category}}</span></div><h2>{{item.name}}</h2><div class="author">BY {{item.author}}</div><p class="description">{{item.description}}</p><div class="card-bottom"><div class="repository"><span class="host">{{item.host}}</span><span class="repo">{{item.repository}}</span></div><div class="command-label">{{item.commandLabel || 'INSTALL COMMAND'}}</div><div class="command">{{item.command}}</div></div></article>
+<article class="card glass"><div class="card-top"><span class="number">{{item.number}}</span><span class="tag">{{item.category}}</span></div><h2>{{item.name}}</h2><div class="author">BY {{item.author}}</div><p class="description">{{item.description}}</p><div class="card-bottom"><div class="repository"><span class="host">{{item.host}}</span><span class="repo">{{item.repository}}</span></div><div class="command-label">{{item.commandLabel || 'INSTALL COMMAND'}}</div><div class="command">{{item.command}}</div></div></article>
 {{/each}}
 </div>
 <div class="hint">{{notice || '仅主人可安装 · 选择一款插件，开启新的可能。'}}{{if hint}}<br>{{hint}}{{/if}}{{if total > shown}}<br>匹配结果较多，当前展示前 {{shown}} 项；添加更具体的关键词可缩小范围。{{/if}}</div>
 <div class="footer"><div><strong>JiuLi-Plugin</strong> · 常用工具，一处就绪。<div class="source">SOURCE / gitee.com/yhArcadia/Yunzai-Bot-plugins-index</div></div><div>{{generatedAt}}<br>功能类 / 游戏 IP 类 / 文游类</div></div>
 </div>
+<script>
+function getLuma(src) {
+  return new Promise(res => {
+    const img = new Image(); img.crossOrigin = "anonymous";
+    img.onload = () => {
+      try {
+        const c = document.createElement("canvas"); c.width = c.height = 32;
+        const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, 32, 32);
+        const d = x.getImageData(0, 0, 32, 32).data; let sum = 0;
+        for (let i = 0; i < d.length; i += 4) sum += .2126 * d[i] + .7152 * d[i + 1] + .0722 * d[i + 2];
+        const luma = sum / (d.length / 4) / 255;
+        const full = document.createElement("canvas"); full.width = img.naturalWidth; full.height = img.naturalHeight;
+        full.getContext("2d").drawImage(img, 0, 0);
+        const background = full.toDataURL("image/webp", .94);
+        document.documentElement.style.setProperty("--page-background", `url("${background}")`);
+        res(luma);
+      } catch { res(.6); }
+    };
+    img.onerror = () => res(.6);
+    img.src = src;
+  });
+}
+getLuma("https://t.alcy.cc/mp").then(l => { document.documentElement.dataset.theme = l < .5 ? "dark" : "light"; });
+
+(function () {
+  const defs = document.getElementById("defs");
+  const observed = new WeakMap();
+
+  function applyGlass(el, radius = 28, bezel = 18) {
+    const w = el.offsetWidth, h = el.offsetHeight;
+    if (!w || !h) return;
+    const previous = el.dataset.glassFilterId;
+    const previousSize = observed.get(el);
+    if (previous && previousSize && previousSize.w === w && previousSize.h === h) return;
+    if (previous) document.getElementById(previous)?.remove();
+
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    const ctx = c.getContext("2d"), img = ctx.createImageData(w, h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const cx = x + .5 - w / 2, cy = y + .5 - h / 2;
+      const px = Math.abs(cx) - (w / 2 - radius), py = Math.abs(cy) - (h / 2 - radius);
+      const ox = Math.max(px, 0), oy = Math.max(py, 0);
+      const depth = -(Math.hypot(ox, oy) + Math.min(Math.max(px, py), 0) - radius);
+      let nx = 0, ny = 0, m = 0;
+      if (depth >= 0 && depth < bezel) {
+        m = Math.pow(1 - depth / bezel, 3);
+        if (px > 0 && py > 0) { const l = Math.hypot(ox, oy) || 1; nx = Math.sign(cx) * ox / l; ny = Math.sign(cy) * oy / l; }
+        else if (px > py) nx = Math.sign(cx); else ny = Math.sign(cy);
+      }
+      const i = (y * w + x) * 4;
+      img.data[i] = 128 - nx * m * 127;
+      img.data[i + 1] = 128 - ny * m * 127;
+      img.data[i + 2] = 128; img.data[i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    const id = "g" + Math.random().toString(36).slice(2);
+    defs.insertAdjacentHTML("beforeend", `
+      <filter id="${id}" x="0" y="0" width="${w}" height="${h}" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+        <feImage href="${c.toDataURL()}" x="0" y="0" width="${w}" height="${h}" result="map" />
+        <feDisplacementMap in="SourceGraphic" in2="map" scale="${bezel * 1.0}" xChannelSelector="R" yChannelSelector="G" />
+      </filter>`);
+    const f = `blur(4px) url(#${id}) saturate(1.7) brightness(1.06)`;
+    el.style.backdropFilter = el.style.webkitBackdropFilter = f;
+    el.dataset.glassFilterId = id;
+    observed.set(el, { w, h });
+  }
+
+  const cards = [...document.querySelectorAll(".glass")];
+  cards.forEach(el => applyGlass(el));
+  if (window.ResizeObserver) {
+    const observer = new ResizeObserver(entries => {
+      for (const { target } of entries) requestAnimationFrame(() => applyGlass(target));
+    });
+    cards.forEach(el => observer.observe(el));
+  }
+  if (document.fonts?.ready) document.fonts.ready.then(() => cards.forEach(el => applyGlass(el)));
+})();
+</script>
 </body>
 </html>
