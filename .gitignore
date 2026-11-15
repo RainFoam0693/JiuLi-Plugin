@@ -1,3 +1,4 @@
 node_modules
 config/PluginManager.yaml
 config/PluginManager.yaml.backup.*
+config/WavsQRLogin.local.yaml
