@@ -59,7 +59,9 @@ export function rewriteCodeMessage(message) {
 
 // Bot 在 Yunzai 中可能是会把未知属性转发给账号的 Proxy；
 // 不要用 Symbol 属性访问它，否则不同平台/系统下都会触发隐式字符串转换。
-const botStates = new WeakMap()
+//这个RainFoam0693的代码太嘿壳了
+const botStates = globalThis[Symbol.for('JiuLi-Plugin.code-message-rewrite.states')] ??= new WeakMap() 
+const PATCHED = Symbol.for('JiuLi-Plugin.code-message-rewrite.patched')
 /** 在适配器发送前处理 node，避免合并转发先被协议编码为 XML。 */
 export function installCodeRewrite(bot = globalThis.Bot) {
   if (!bot || (typeof bot !== 'object' && typeof bot !== 'function')) return
@@ -74,7 +76,7 @@ export function installCodeRewrite(bot = globalThis.Bot) {
   const attach = () => {
     for (const adapter of bot.adapter || []) {
       // 仅在真正进入官机适配器时改写，不能按静态群绑定提前改写 ICQQ。
-      if (adapter.name !== 'QQBot' || typeof adapter.sendMsg !== 'function' || state.wrappers.has(adapter.sendMsg)) continue
+      if (adapter.name !== 'QQBot' || typeof adapter.sendMsg !== 'function' || adapter.sendMsg[PATCHED]) continue
       const original = adapter.sendMsg
       const wrapped = function (...args) {
         const [data, pick, message] = args
@@ -86,12 +88,12 @@ export function installCodeRewrite(bot = globalThis.Bot) {
         return Reflect.apply(original, this, args)
       }
       state.wrappers.add(wrapped)
+      wrapped[PATCHED] = true
       adapter.sendMsg = wrapped
     }
   }
   attach()
-  if (!state.timer) {
-    state.timer = setInterval(attach, 2000)
-    state.timer.unref?.()
-  }
+  if (state.timer) clearInterval(state.timer)
+  state.timer = setInterval(attach, 2000)
+  state.timer.unref?.()
 }
