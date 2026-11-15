@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { parse, stringify } from 'yaml'
 import { PluginRepositories } from './Model/PluginRepositories.js'
 import { normalizeCloneProxy } from './Model/CloneProxy.js'
+import { readWavsQRConfig, saveWavsQRConfig } from './Model/WavsQRConfig.js'
 
 const configFile = fileURLToPath(new URL('./config/PluginManager.yaml', import.meta.url))
 const platforms = [['github', 'GitHub', 'github.com'], ['gitcode', 'GitCode', 'gitcode.com'], ['gitee', 'Gitee', 'gitee.com']]
@@ -43,6 +44,8 @@ export function createAuthConfigInfo(file = configFile, hostRoot = process.cwd()
   }
   return {
     get schemas() { return [
+      { label: '鸣潮扫码授权', component: 'SOFT_GROUP_BEGIN' },
+      { field: 'waveDatabasePath', label: 'GsData.db 路径', component: 'Input', componentProps: { placeholder: '/path/to/GsData.db', autocomplete: 'off' }, bottomHelpMessage: '读取 gsuid_core 的 GsData.db 中鸣潮账号信息；填写数据库绝对路径，保存后立即生效。' },
       { label: '安装方式', component: 'SOFT_GROUP_BEGIN' },
       { field: 'cloneProtocol', label: 'Git 克隆方式', component: 'Select', componentProps: { options: [{ label: 'HTTPS（用户名 / 访问令牌）', value: 'https' }, { label: 'SSH（本机 SSH 密钥）', value: 'ssh' }] }, bottomHelpMessage: '对后续新安装生效。SSH 使用机器人运行账号的本机密钥，不使用下方访问令牌；已有仓库地址不变。' },
       { field: 'httpsProxyEnabled', label: 'HTTPS 反代克隆', component: 'Switch', bottomHelpMessage: '开启后，确认可匿名访问的公开仓库优先使用 HTTPS 反代。私库认证及权限无法确认时仍直连，不向反代发送平台密钥。' },
@@ -59,7 +62,7 @@ export function createAuthConfigInfo(file = configFile, hostRoot = process.cwd()
     ])] },
     getConfigData() {
       const config = read()
-      return { httpsProxyEnabled: config.httpsProxyEnabled === true, httpsProxyUrl: config.httpsProxyUrl || '', repositoryTarget: '', repositoryProtocol: 'https', repositoryApply: false, cloneProtocol: config.cloneProtocol === 'ssh' ? 'ssh' : 'https', ...Object.fromEntries(platforms.flatMap(([id, , host]) => [
+      return { waveDatabasePath: readWavsQRConfig().databasePath || '', httpsProxyEnabled: config.httpsProxyEnabled === true, httpsProxyUrl: config.httpsProxyUrl || '', repositoryTarget: '', repositoryProtocol: 'https', repositoryApply: false, cloneProtocol: config.cloneProtocol === 'ssh' ? 'ssh' : 'https', ...Object.fromEntries(platforms.flatMap(([id, , host]) => [
         [`${id}Username`, config.auth?.[host]?.username || ''],
         [`${id}Token`, ''],
         [`${id}ClearToken`, false]
@@ -72,6 +75,10 @@ export function createAuthConfigInfo(file = configFile, hostRoot = process.cwd()
       let switched = false
       try {
         const config = read()
+        if (Object.hasOwn(data, 'waveDatabasePath')) {
+          if (typeof data.waveDatabasePath !== 'string') throw new Error('GsData.db 路径必须为文本')
+          saveWavsQRConfig({ databasePath: data.waveDatabasePath })
+        }
         if (Object.hasOwn(data, 'cloneProtocol')) {
           if (!['https', 'ssh'].includes(data.cloneProtocol)) throw new Error('请选择 HTTPS 或 SSH 克隆方式')
           config.cloneProtocol = data.cloneProtocol

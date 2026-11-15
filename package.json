@@ -13,7 +13,8 @@
     "qrcode": "^1.5.4",
     "sharp": "0.33.5",
     "zxing-wasm": "^2.2.4",
-    "yaml": "^2.8.0"
+    "yaml": "^2.8.0",
+    "sqlite3": "^5.1.7"
   },
   "repository": {
     "type": "git",
