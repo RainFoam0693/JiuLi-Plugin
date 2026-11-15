@@ -6,7 +6,7 @@ import { readWavsQRConfig } from '../Model/WavsQRConfig.js';
 const verificationMap = new Map();
 const uid = new Map();
 
-export class WaveQRLogins extends plugin {
+export class WavsQRLogin extends plugin {
   constructor() {
     super({
       name: '鸣潮游戏登录',
