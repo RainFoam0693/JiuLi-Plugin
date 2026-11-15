@@ -5,7 +5,7 @@ import { parse, stringify } from 'yaml';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 export const wavsQRConfigPath = path.resolve(directory, '../config/WavsQRLogin.yaml');
-const defaultConfig = { databasePath: '/Users/chuzu/Desktop/gsuid_core/data/GsData.db' };
+const defaultConfig = { databasePath: '' };
 
 export function readWavsQRConfig() {
   if (!fs.existsSync(wavsQRConfigPath)) return { ...defaultConfig };
