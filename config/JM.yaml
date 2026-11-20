@@ -1,0 +1,15 @@
+# JM 功能权限和外部命令；非主人使用需添加 QQ 号到 users。
+allowMaster: true
+users: []
+# 留空时自动尝试 python3/python（Windows 会尝试 py -3、python3、python）。
+pythonCommand: ''
+# jmcomic 命令行程序需安装在 PATH 中。
+jmcomicCommand: jmcomic
+# PDF 缓存数量，范围 1-50。
+cacheLimit: 5
+
+# 功能开关和白名单由锅巴写入 JM.local.yaml，本地配置不会推送。
+features:
+  download: true
+  search: true
+  rank: true

@@ -6,12 +6,13 @@ import { parse, stringify } from 'yaml'
 import { PluginRepositories } from './Model/PluginRepositories.js'
 import { normalizeCloneProxy } from './Model/CloneProxy.js'
 import { readWavsQRConfig, saveWavsQRConfig } from './Model/WavsQRConfig.js'
+import { jmLocalConfigPath, readJmConfig } from './Model/JM.js'
 
 const configFile = fileURLToPath(new URL('./config/PluginManager.yaml', import.meta.url))
 const platforms = [['github', 'GitHub', 'github.com'], ['gitcode', 'GitCode', 'gitcode.com'], ['gitee', 'Gitee', 'gitee.com']]
 
 /** 仅向已登录的锅巴面板提供配置，已有令牌不回传到浏览器。 */
-export function createAuthConfigInfo(file = configFile, hostRoot = process.cwd()) {
+export function createAuthConfigInfo(file = configFile, hostRoot = process.cwd(), localJmFile = jmLocalConfigPath) {
   const pluginRoot = path.join(hostRoot, 'plugins')
   function repositoryOptions() {
     const options = []
@@ -59,22 +60,54 @@ export function createAuthConfigInfo(file = configFile, hostRoot = process.cwd()
       { field: `${id}Username`, label: '用户名', component: 'Input', bottomHelpMessage: '填写该平台账户用户名；留空沿用安装器默认认证用户名。', componentProps: { autocomplete: 'off' } },
       { field: `${id}Token`, label: '访问令牌 / 密钥', component: 'InputPassword', bottomHelpMessage: '填写个人访问令牌（PAT），不是 SSH 私钥。已有令牌不回显，留空保留。仅用于 HTTPS 仓库认证。', componentProps: { autocomplete: 'new-password' } },
       { field: `${id}ClearToken`, label: '清除已保存密钥', component: 'Switch', bottomHelpMessage: '开启后保存可清除；清除与填写新密钥不能同时操作。' }
-    ])] },
+    ]),
+      { label: 'JM 插件', component: 'SOFT_GROUP_BEGIN' },
+      { field: 'jmUsers', label: 'QQ 白名单', component: 'Input', componentProps: { placeholder: '多个 QQ 号用逗号或空格分隔', autocomplete: 'off' }, bottomHelpMessage: 'JM 下载、JM 搜索和 JM 排行榜共用此白名单；数据仅写入本地忽略配置，不会随插件仓库推送。主人是否可绕过白名单由下方开关控制。' },
+      { field: 'jmAllowMaster', label: '允许主人使用', component: 'Switch', bottomHelpMessage: '开启后机器人主人无需加入 QQ 白名单。' },
+      { field: 'jmDownloadEnabled', label: 'JM 下载', component: 'Switch' },
+      { field: 'jmSearchEnabled', label: 'JM 搜索', component: 'Switch' },
+      { field: 'jmRankEnabled', label: 'JM 排行榜', component: 'Switch' }
+    ] },
     getConfigData() {
       const config = read()
+      const jm = readJmConfig()
       return { waveDatabasePath: readWavsQRConfig().databasePath || '', httpsProxyEnabled: config.httpsProxyEnabled === true, httpsProxyUrl: config.httpsProxyUrl || '', repositoryTarget: '', repositoryProtocol: 'https', repositoryApply: false, cloneProtocol: config.cloneProtocol === 'ssh' ? 'ssh' : 'https', ...Object.fromEntries(platforms.flatMap(([id, , host]) => [
         [`${id}Username`, config.auth?.[host]?.username || ''],
         [`${id}Token`, ''],
         [`${id}ClearToken`, false]
-      ])) }
+      ])), jmUsers: jm.users.join(', '), jmAllowMaster: jm.allowMaster === true, jmDownloadEnabled: jm.features.download !== false, jmSearchEnabled: jm.features.search !== false, jmRankEnabled: jm.features.rank !== false }
     },
     async setConfigData(data, { Result }) {
       let temporary
+      let jmTemporary
       let repositories
       let target
       let switched = false
       try {
         const config = read()
+        const jmLocalValue = fs.existsSync(localJmFile) ? parse(fs.readFileSync(localJmFile, 'utf8')) : {}
+        const jmLocal = jmLocalValue && typeof jmLocalValue === 'object' && !Array.isArray(jmLocalValue) ? jmLocalValue : {}
+        let jmChanged = false
+        if (Object.hasOwn(data, 'jmUsers')) {
+          if (typeof data.jmUsers !== 'string') throw new Error('QQ 白名单必须为文本')
+          const users = [...new Set(data.jmUsers.split(/[\s,，;；]+/).map(value => value.trim()).filter(Boolean))]
+          if (users.some(value => !/^\d{5,13}$/.test(value))) throw new Error('白名单中的 QQ 号格式不正确')
+          jmLocal.users = users
+          jmChanged = true
+        }
+        if (Object.hasOwn(data, 'jmAllowMaster')) {
+          if (typeof data.jmAllowMaster !== 'boolean') throw new Error('允许主人使用必须为开关值')
+          jmLocal.allowMaster = data.jmAllowMaster
+          jmChanged = true
+        }
+        if (!jmLocal.features || typeof jmLocal.features !== 'object' || Array.isArray(jmLocal.features)) jmLocal.features = {}
+        for (const [field, feature] of [['jmDownloadEnabled', 'download'], ['jmSearchEnabled', 'search'], ['jmRankEnabled', 'rank']]) {
+          if (Object.hasOwn(data, field)) {
+            if (typeof data[field] !== 'boolean') throw new Error(`${field} 必须为开关值`)
+            jmLocal.features[feature] = data[field]
+            jmChanged = true
+          }
+        }
         if (Object.hasOwn(data, 'waveDatabasePath')) {
           if (typeof data.waveDatabasePath !== 'string') throw new Error('GsData.db 路径必须为文本')
           saveWavsQRConfig({ databasePath: data.waveDatabasePath })
@@ -126,9 +159,17 @@ export function createAuthConfigInfo(file = configFile, hostRoot = process.cwd()
           switched = true
         }
         fs.renameSync(temporary, file)
-        return Result.ok({}, switched ? `${target.displayName || target.name} 已切换为 ${data.repositoryProtocol.toUpperCase()}，配置已保存` : '已保存，下次安装时生效')
+        if (jmChanged) {
+          fs.mkdirSync(path.dirname(localJmFile), { recursive: true })
+          jmTemporary = `${localJmFile}.${randomUUID()}.tmp`
+          fs.writeFileSync(jmTemporary, stringify(jmLocal), { mode: 0o600, flag: 'wx' })
+          fs.renameSync(jmTemporary, localJmFile)
+          jmTemporary = undefined
+        }
+        return Result.ok({}, switched ? `${target.displayName || target.name} 已切换为 ${data.repositoryProtocol.toUpperCase()}，配置已保存` : '配置已保存')
       } catch (error) {
         if (temporary && fs.existsSync(temporary)) fs.unlinkSync(temporary)
+        if (jmTemporary && fs.existsSync(jmTemporary)) fs.unlinkSync(jmTemporary)
         const message = error.message.includes('Command failed') ? '仓库操作失败，请检查 Git 和目录权限' : error.message
         return Result.error(switched ? `仓库协议已切换，但配置保存失败：${message}` : message)
       } finally { repositories?.close() }

@@ -1,3 +1,7 @@
 node_modules
 config/PluginManager.yaml
 config/PluginManager.yaml.backup.*
+/data/JM/
+/config/JM.local.yaml
+/config/JMComic.yaml
+/config/JMComic.yml

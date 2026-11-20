@@ -13,7 +13,7 @@
 [![GitHub](https://img.shields.io/badge/GitHub-主仓库-181717?style=flat-square&logo=github)](https://github.com/RainFoam0693/JiuLi-Plugin)
 [![GitCode](https://img.shields.io/badge/GitCode-国内镜像-EF4058?style=flat-square)](https://gitcode.com/RainFoam0693/JiuLi-Plugin)
 
-[快速开始](#快速开始) · [功能一览](#功能一览) · [指令手册](#指令手册) · [图片日志](#图片日志) · [问题排查](#问题排查)
+[快速开始](#快速开始) · [功能一览](#功能一览) · [指令手册](#指令手册) · [JM 依赖](#jm禁漫功能) · [图片日志](#图片日志) · [问题排查](#问题排查)
 
 </div>
 
@@ -136,6 +136,84 @@ QQ 档案以协议返回的公开资料为准；图片渲染失败时会回退�
 文件操作：`文件查看路径` · `文件上传路径` · `文件下载路径`。
 
 脚本执行：`脚本执行命令`，需要宿主环境提供对应安装脚本。远程命令和文件操作均使用宿主的主人权限。
+
+## JM（禁漫）功能
+
+JM 下载、搜索和排行榜共用一份 QQ 白名单。白名单和开关可在**锅巴 → JiuLi-Plugin → JM 插件**配置；主人可按开关决定是否绕过白名单。默认只有机器人主人可用。
+
+| 组件 | 用途 |
+| :--- | :--- |
+| Python 3 + `jmcomic` | 下载、搜索与排行榜 |
+| `img2pdf` | 将下载图片整理成 PDF |
+| `qpdf` | 为 PDF 设置作品 ID 密码 |
+
+插件不会自动安装这些系统依赖。下面选择对应系统安装；所有命令都必须能被 **JiuLi 进程**找到。
+
+<details>
+<summary><b>macOS</b></summary>
+
+安装 [Homebrew](https://brew.sh/) 和 Python 3（建议使用 JMComic 上游推荐的 Python 3.14），再执行：
+
+```bash
+brew install qpdf
+python3 -m venv ~/.venvs/jiuli-jm
+source ~/.venvs/jiuli-jm/bin/activate
+python -m pip install --upgrade pip
+python -m pip install jmcomic img2pdf
+```
+
+</details>
+
+<details>
+<summary><b>Linux（Debian / Ubuntu）</b></summary>
+
+```bash
+sudo apt update
+sudo apt install -y python3 python3-venv qpdf
+python3 -m venv ~/.venvs/jiuli-jm
+source ~/.venvs/jiuli-jm/bin/activate
+python -m pip install --upgrade pip
+python -m pip install jmcomic img2pdf
+```
+
+其他发行版请用系统包管理器安装 `qpdf`，再在 Python 虚拟环境中安装 `jmcomic` 和 `img2pdf`。
+
+</details>
+
+<details>
+<summary><b>Windows（PowerShell）</b></summary>
+
+先安装 [Python 3.14](https://www.python.org/downloads/)（保留 Python Launcher），然后运行：
+
+```powershell
+py -3 -m venv "$env:USERPROFILE\jiuli-jm"
+& "$env:USERPROFILE\jiuli-jm\Scripts\python.exe" -m pip install --upgrade pip
+& "$env:USERPROFILE\jiuli-jm\Scripts\python.exe" -m pip install jmcomic img2pdf
+```
+
+从 [qpdf 官方 Releases](https://github.com/qpdf/qpdf/releases/latest) 安装适合系统架构的 Windows 版本；普通 64 位 Intel / AMD 电脑选 `msvc64` 安装包。将 qpdf 安装目录加入 `PATH`。
+
+</details>
+
+### 检查依赖
+
+```bash
+jmcomic --help
+img2pdf --help
+qpdf --version
+```
+
+用安装 `jmcomic` 的 Python 检查模块：
+
+```bash
+python -c "from jmcomic import JmOption; print('jmcomic OK')"
+```
+
+如果 JiuLi 由服务、启动器或面板启动，交互式终端里的 `PATH` 可能不会传给机器人。请把虚拟环境的 `bin`（Windows 为 `Scripts`）和 `qpdf` 所在目录加入 **JiuLi 启动进程的 PATH**，然后重启 JiuLi。也可以在 `plugins/JiuLi-Plugin/config/JM.yaml` 指定 `pythonCommand` 和 `jmcomicCommand` 的绝对路径；`img2pdf` 与 `qpdf` 仍需在 PATH 中。
+
+插件首次下载时会生成 `config/JMComic.yml`，下载与 PDF 缓存在 `data/JM/`；这些本地配置和数据均已加入 Git 忽略规则。使用指令：`#jm作品ID`、`#jm搜索关键词`、`#jm排行榜`。生成的 PDF 密码为作品 ID。
+
+安装说明参考 [JMComic 上游文档](https://github.com/hect0x7/JMComic-Crawler-Python#安装教程)、[img2pdf 官方安装说明](https://github.com/josch/img2pdf#installation) 和 [qpdf 官方 Windows 安装包说明](https://github.com/qpdf/qpdf/blob/main/README-what-to-download.md)。
 
 ## 插件安装器
 
