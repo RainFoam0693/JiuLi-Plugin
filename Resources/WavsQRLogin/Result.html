@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font: 16px system-ui, "PingFang SC", "Microsoft YaHei", sans-serif; }
+#container {
+  width: 560px; padding: 26px; color: #edf7ff;
+  background: radial-gradient(ellipse at 95% 0%, #275766 0, transparent 65%), #111c29;
+}
+.card {
+  border: 1px solid #ffffff38; background: #ffffff12;
+  border-radius: 24px; padding: 24px;
+}
+.label { color: #a8c7db; font-size: 13px; letter-spacing: .12em; }
+h1 { font-size: 28px; margin: 10px 0 14px; }
+.ok { color: #9af1cf; }
+p { margin: 8px 0 0; line-height: 1.5; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main id="container">
+  <section class="card">
+    <div class="label">鸣潮 · 游戏登录</div>
+    <h1 class="{{if success}}ok{{/if}}">{{title}}</h1>
+    {{each lines line}}<p>{{line}}</p>{{/each}}
+  </section>
+</main>
+</body>
+</html>

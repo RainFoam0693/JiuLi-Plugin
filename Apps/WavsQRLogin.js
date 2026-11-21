@@ -2,9 +2,31 @@ import WaveQRLogin from '../Model/WavsQRLoginModel.js';
 import { UserDatabase } from '../Model/WavsQRUserDatabase.js';
 
 import fs from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import { readWavsQRConfig } from '../Model/WavsQRConfig.js';
 const verificationMap = new Map();
 const uid = new Map();
+
+const htmlDir = fileURLToPath(new URL('../Resources/WavsQRLogin/', import.meta.url));
+const tplFile = fileURLToPath(new URL('../Resources/WavsQRLogin/Result.html', import.meta.url));
+
+const v6TplFile = fileURLToPath(new URL('../Resources/WavsQRLogin/Authorization.html', import.meta.url));
+
+async function replyCard(e, title, lines, state, gameUid) {
+  const fallback = [title, ...lines].join('\n');
+  try {
+    const { default: puppeteer } = await import('../../../lib/puppeteer/puppeteer.js');
+    const image = await puppeteer.screenshot('JiuLi-Plugin/WavsQRLogin', {
+      tplFile: state ? v6TplFile : tplFile, htmlDir, saveId: randomUUID(), imgType: 'png',
+      deviceScaleFactor: 2, title, lines, state, gameUid,
+    });
+    if (image && await e.reply(image, true) !== false) return true;
+  } catch {
+    logger.warn('[鸣潮游戏登录] 图片回复失败，改用文字');
+  }
+  return e.reply(fallback, true);
+}
 
 export class WavsQRLogin extends plugin {
   constructor() {
@@ -74,11 +96,12 @@ async function Wave_Login(e) {
       const validUserData = userData.filter(account => account.uid && String(account.uid).length === 9);
       if (validUserData.length === 0) return e.reply('未登录鸣潮，使用示例指令【ww登录】后再试...', true);
       if (validUserData.length > 1) {
-        let replyMessage = `当前绑定 ${validUserData.length} 个账号\n请使用对应的确认指令完成登录：\n`;
-        validUserData.forEach((account, index) => {
-          replyMessage += `\n账号${index + 1} (UID: ${account.uid})：\n【ww确认登录${account.uid}】`;
-        });
-        await e.reply(replyMessage, true);
+        const lines = validUserData.map((account, index) =>
+          `账号 ${index + 1} · UID ${account.uid} · ww确认登录${account.uid}`
+        );
+        await replyCard(e, `当前绑定 ${validUserData.length} 个账号`, [
+          '请携带二维码发送对应的确认指令', ...lines,
+        ]);
       } else {
         let data = validUserData[0];
         await QRLogin(e, data, buffer);
@@ -92,15 +115,15 @@ async function QRLogin(e, data, buffer) {
     const qrLogin = new WaveQRLogin(data.cookie, { device_id: data.did });
     const result = await qrLogin.login(buffer);
     if (result.succeed) {
-      return await e.reply(`登录成功！\n游戏UID: ${data.uid}\n授权应用: 鸣潮`, true);
+      return await replyCard(e, '登录成功！', [`游戏 UID：${data.uid}`, '授权应用：鸣潮'], 'success', data.uid);
     } else {
       if (result.needVerification && result.storageKey) {
-        await e.reply('本次授权登录需要进行二维码验证，验证码已发出!\n请使用指令【ww验证123456】完成验证', true);
         verificationMap.set(e.user_id, result.storageKey);
         uid.set(result.storageKey, data.uid);
+        await replyCard(e, '需要验证码', ['验证码已发出', '请使用 ww验证123456 提交实际验证码'], 'verification');
         return true;
       }
-      return await e.reply('授权登录失败，未知错误，请联系主人...', true);
+      return await replyCard(e, '授权登录失败', ['未知错误，请联系主人']);
     }
   } catch (error) {
     logger.error(error);
@@ -115,7 +138,7 @@ async function verify(e, verifyCode) {
     const qrLogin = new WaveQRLogin();
     const result = await qrLogin.Verification(storageKey, verifyCode);
     if (result.succeed) {
-      return await e.reply(`登录成功!\n游戏UID: ${uid.get(storageKey)}\n授权应用: 鸣潮`, true);
+      return await replyCard(e, '登录成功！', [`游戏 UID：${uid.get(storageKey)}`, '授权应用：鸣潮'], 'success', uid.get(storageKey));
     } else {
       return await e.reply(result.data.msg, true);
     }
