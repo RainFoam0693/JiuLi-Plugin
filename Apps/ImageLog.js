@@ -2,7 +2,6 @@ import fs from "node:fs/promises";
 import { createRequire } from "node:module";
 import puppeteer from "../../../lib/puppeteer/puppeteer.js";
 import path from "node:path";
-import hljs from "highlight.js";
 import { parseLogCommand, selectLogLines } from "../Model/ImageLog.js";
 
 const dateFormat = new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
@@ -124,6 +123,7 @@ export class ImageLog extends plugin {
   }
 
   async generateLogHtml(log) {
+    const { default: hljs } = await import("highlight.js");
     const fileName = parseLogCommand(this.e.msg).isError ? "error.log" : path.basename(this.logFileOf(false));
     const date = now();
     const css = await getHighlightCss();

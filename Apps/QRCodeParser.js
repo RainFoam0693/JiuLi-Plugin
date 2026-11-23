@@ -1,7 +1,3 @@
-import QRCodeParserModel from "../Model/QRCodeParser.js"
-
-const parser = new QRCodeParserModel()
-
 export class QRCodeParser extends plugin {
   constructor () {
     super({
@@ -36,7 +32,8 @@ export class QRCodeParser extends plugin {
     { return false }
 
     this.finish("ParseQRCode")
-    const result = await parser.parse(imageUrl)
+    const { default: Parser } = await import("../Model/QRCodeParser.js")
+    const result = await new Parser().parse(imageUrl)
     if (result.code !== 0) {
       await this.reply(result.msg, true)
       return true

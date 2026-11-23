@@ -1,5 +1,3 @@
-import WaveQRLogin from '../Model/WavsQRLoginModel.js';
-import { UserDatabase } from '../Model/WavsQRUserDatabase.js';
 
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -99,6 +97,7 @@ async function Wave_Login(e) {
     const dbPath = readWavsQRConfig().databasePath;
     if (!dbPath) return await e.reply('请先在锅巴配置鸣潮 GsData.db 路径', true);
     if (!fs.existsSync(dbPath)) return await e.reply(`未找到鸣潮数据库：${dbPath}`, true);
+    const { UserDatabase } = await import('../Model/WavsQRUserDatabase.js');
     const userDB = new UserDatabase(dbPath);
     const url = await getimageUrl(e);
     if (!url) return await e.reply('请同时携带二维码图片使用该指令', true);
@@ -132,6 +131,7 @@ async function Wave_Login(e) {
 
 async function QRLogin(e, data, buffer) {
   try {
+    const { default: WaveQRLogin } = await import('../Model/WavsQRLoginModel.js');
     const qrLogin = new WaveQRLogin(data.cookie, { device_id: data.did });
     const result = await qrLogin.login(buffer);
     if (result.succeed) {
@@ -155,6 +155,7 @@ async function verify(e, verifyCode) {
   try {
     if (!verificationMap.has(e.user_id)) return await e.reply('你无需进行验证，请直接使用【ww确认登录】完成登录操作', true);
     const storageKey = verificationMap.get(e.user_id);
+    const { default: WaveQRLogin } = await import('../Model/WavsQRLoginModel.js');
     const qrLogin = new WaveQRLogin();
     const result = await qrLogin.Verification(storageKey, verifyCode);
     if (result.succeed) {
