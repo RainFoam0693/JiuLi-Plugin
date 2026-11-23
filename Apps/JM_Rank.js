@@ -1,4 +1,4 @@
-import { canUseJm, runPython, sendJmForward } from '../Model/JM.js'
+import { canUseJm, isJmFeatureEnabled, runPython, sendJmForward } from '../Model/JM.js'
 
 export class JM_Rank extends plugin {
   constructor() {

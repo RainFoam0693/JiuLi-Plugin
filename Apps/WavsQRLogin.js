@@ -13,14 +13,34 @@ const tplFile = fileURLToPath(new URL('../Resources/WavsQRLogin/Result.html', im
 
 const v6TplFile = fileURLToPath(new URL('../Resources/WavsQRLogin/Authorization.html', import.meta.url));
 
+const cardCache = new Map();
+
+async function renderCard(title, lines, state, gameUid) {
+  // 只有成功和验证码卡片内容固定。成功卡按实际 UID 隔离。
+  const key = state === 'success' && gameUid ? `success:${gameUid}`
+    : state === 'verification' ? 'verification' : null;
+  const { default: puppeteer } = await import('../../../lib/puppeteer/puppeteer.js');
+  if (key && cardCache.has(key)) return cardCache.get(key);
+  const pending = puppeteer.screenshot('JiuLi-Plugin/WavsQRLogin', {
+    tplFile: state ? v6TplFile : tplFile, htmlDir, saveId: randomUUID(), imgType: 'png',
+    pageGotoParams: { waitUntil: 'domcontentloaded' }, deviceScaleFactor: 2, title, lines, state, gameUid,
+  });
+  if (!key) return pending;
+  if (cardCache.size >= 32) cardCache.delete(cardCache.keys().next().value);
+  cardCache.set(key, pending);
+  let image;
+  try {
+    image = await pending;
+    return image;
+  } finally {
+    if (!image && cardCache.get(key) === pending) cardCache.delete(key);
+  }
+}
+
 async function replyCard(e, title, lines, state, gameUid) {
   const fallback = [title, ...lines].join('\n');
   try {
-    const { default: puppeteer } = await import('../../../lib/puppeteer/puppeteer.js');
-    const image = await puppeteer.screenshot('JiuLi-Plugin/WavsQRLogin', {
-      tplFile: state ? v6TplFile : tplFile, htmlDir, saveId: randomUUID(), imgType: 'png',
-      deviceScaleFactor: 2, title, lines, state, gameUid,
-    });
+    const image = await renderCard(title, lines, state, gameUid);
     if (image && await e.reply(image, true) !== false) return true;
   } catch {
     logger.warn('[鸣潮游戏登录] 图片回复失败，改用文字');

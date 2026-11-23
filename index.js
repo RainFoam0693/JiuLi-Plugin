@@ -1,6 +1,6 @@
 logger.info(logger.yellow("- 正在加载 JiuLi-Plugin"))
 
-if (process.version < "v18")
+if (Number(process.versions.node.split(".")[0]) < 18)
   throw Error(`Node.js ${process.version} < v18`)
 import fs from "node:fs/promises"
 
@@ -34,7 +34,7 @@ Bot.String ??= (data, opts) => {
   try {
     return JSON.stringify(data, undefined, opts)
   } catch (err) {
-    if (typeof data.toString == "function")
+    if (typeof data?.toString == "function")
       return String(data)
     else
       return "[object null]"
@@ -58,9 +58,10 @@ if (!Bot.exec) {
       if (error) logger[opts.quiet ? "debug" : "error"]("[执行命令]", error)
     }
     const start_time = Date.now()
-    if (Array.isArray(cmd))
-      execFile(cmd.shift(), cmd, opts, callback)
-    else
+    if (Array.isArray(cmd)) {
+      const [file, ...args] = cmd
+      execFile(file, args, opts, callback)
+    } else
       exec(cmd, opts, callback)
   })
 }
@@ -86,7 +87,7 @@ Bot.glob ??= async (path, opts = {}) => {
   return array
 }
 
-const files = (await fs.readdir("plugins/JiuLi-Plugin/Apps"))
+const files = (await fs.readdir(new URL("./Apps/", import.meta.url)))
   .filter(file => file.endsWith(".js"))
 
 const ret = await Promise.allSettled(

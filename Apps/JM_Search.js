@@ -1,4 +1,4 @@
-import { canUseJm, runPython, sendJmForward } from '../Model/JM.js'
+import { canUseJm, isJmFeatureEnabled, runPython, sendJmForward } from '../Model/JM.js'
 
 export class JM_Search extends plugin {
   constructor() {

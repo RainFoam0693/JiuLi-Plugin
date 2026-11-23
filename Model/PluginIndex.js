@@ -6,6 +6,7 @@ export const INDEX_FILES = ['Function-Plugin.md', 'Game-Plugin.md', 'WordGame-Pl
 const categories = ['功能类', '游戏 IP 类', '文游类']
 let cache = null
 let pending = null
+let retryAfter = 0
 
 function inline(cell) {
   return markdown.parseInline(cell, {})[0]?.children || []
@@ -44,11 +45,11 @@ export function parsePluginMarkdown(source, category = '') {
 
 /** 直接读取三个 Markdown 原文；不使用插件列表或仓库搜索 API。 */
 export async function fetchPluginIndex(fetcher = globalThis.fetch) {
-  if (cache && Date.now() - cache.time < 10 * 60 * 1000) return cache.entries
+  if (cache && Date.now() < Math.max(cache.time + 10 * 60 * 1000, retryAfter)) return cache.entries
   if (pending) return pending
   pending = (async () => {
     try {
-      const groups = await Promise.all(INDEX_FILES.map(async (file, i) => {
+      const results = await Promise.allSettled(INDEX_FILES.map(async (file, i) => {
         const controller = new AbortController()
         const timer = setTimeout(() => controller.abort(), 20000)
         try {
@@ -59,11 +60,16 @@ export async function fetchPluginIndex(fetcher = globalThis.fetch) {
           return entries
         } finally { clearTimeout(timer) }
       }))
+      const groups = results.map(result => {
+        if (result.status === 'rejected') throw result.reason
+        return result.value
+      })
       const entries = [...new Map(groups.flat().map(item => [item.url.toLowerCase(), item])).values()]
       cache = { time: Date.now(), entries }
       return entries
     } catch (error) {
       if (cache) {
+        retryAfter = Date.now() + 60 * 1000
         globalThis.logger?.warn(`[插件管理器] 索引刷新失败，使用上次缓存：${error.message}`)
         return cache.entries
       }

@@ -24,11 +24,11 @@ export function buildSearchPages(result, keyword, generatedAt = new Date().toLoc
 }
 
 /** 全市场按六项分页，不受搜索前 30 项限制。 */
-export function buildMarketPage(entries, page) {
+export function buildMarketPage(entries, page, toSearchEntry = item => item) {
   const pages = Math.ceil(entries.length / 6)
   if (!Number.isSafeInteger(page) || page < 1 || page > pages) return null
   const offset = (page - 1) * 6
-  const data = buildSearchPages(entries.slice(offset, offset + 6), '全部插件 · 功能 / 游戏 IP / 文游')[0]
+  const data = buildSearchPages(entries.slice(offset, offset + 6).map(toSearchEntry), '全部插件 · 功能 / 游戏 IP / 文游')[0]
   Object.assign(data, { total: entries.length, shown: entries.length, page, pages, start: offset + 1, end: Math.min(offset + 6, entries.length), heading: '插件市场', viewLabel: '插件索引', counterLabel: '收录插件 · PLUGINS', hint: '发送 #插件列表页码 翻页，例如 #插件列表2。' })
   data.plugins.forEach((item, i) => { item.number = String(offset + i + 1).padStart(2, '0') })
   return data
@@ -36,7 +36,7 @@ export function buildMarketPage(entries, page) {
 
 /** 本地插件图鉴；缺少索引或仓库地址时仍能展示本地目录。 */
 export function buildInstalledPage(entries, page) {
-  const data = buildMarketPage(entries.map(item => ({ ...item, url: `https://local.invalid/${encodeURIComponent(item.pathname)}` })), page)
+  const data = buildMarketPage(entries, page, item => ({ ...item, url: `https://local.invalid/${encodeURIComponent(item.pathname)}` }))
   if (!data) return null
   Object.assign(data, { heading: '已安装插件', keyword: '本地插件 · 安装目录一览', viewLabel: '本地插件', counterLabel: '已安装 · INSTALLED', hint: '发送 #已安装插件2 查看下一页。', notice: '下方为本地目录对应的卸载指令，请确认插件后再执行。' })
   data.plugins.forEach((item, i) => {
