@@ -8,7 +8,7 @@ import { publicCloneProxy } from '../Model/CloneProxy.js'
 import { buildSearchPages, buildMarketPage, buildInstalledPage } from '../Model/PluginSearch.js'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import { randomUUID } from 'node:crypto'
-import { isOfficialQQBot, resolveInstallerCallback, listButtons, installedButtons, searchButtons, replyWithInstallerButtons } from '../Model/InstallerButtons.js'
+import { isOfficialQQBot, inspectInstallerCallback, listButtons, installedButtons, searchButtons, replyWithInstallerButtons } from '../Model/InstallerButtons.js'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -178,6 +178,10 @@ function reloadConfig() {
   }
 }
 
+// 按钮失效提示的限频表：别人连点或旧按钮被反复点时，不再每次都回复。
+const invalidButtonNotices = new Map()
+const INVALID_BUTTON_NOTICE_TTL = 60 * 1000
+
 export class PluginManager extends plugin {
   constructor () {
     super({
@@ -233,8 +237,15 @@ export class PluginManager extends plugin {
 
   /** 原生按钮回调经 QQBot 的 INTERACTION_CREATE 事件进入，校验后调用业务方法。 */
   async handleInstallerCallback(e) {
-    const action = resolveInstallerCallback(e)
-    if (!action) return e.reply('按钮已失效或不属于当前会话，请重新搜索或打开插件市场。')
+    const callback = inspectInstallerCallback(e)
+    if (!callback.allowed) {
+      // 别人点的、无效点击：静默丢弃；创建者点到过期按钮时，每分钟最多提示一次。
+      if (callback.reason === 'expired' && this.allowInvalidButtonNotice(e)) {
+        return e.reply('按钮已失效，请重新发送 #插件列表 或 #搜索插件。')
+      }
+      return false
+    }
+    const action = callback.action
     // 此次授权来自已验证主人的同一 openid 会话，不修改全局主人配置。
     const request = { ...e, isMaster: true }
     switch (action.type) {
@@ -246,6 +257,20 @@ export class PluginManager extends plugin {
       case 'help': return this.installerHelp(request)
       default: return false
     }
+  }
+
+  /** 失效按钮提示限频：同一用户同一会话每分钟最多提示一次。 */
+  allowInvalidButtonNotice(e) {
+    const key = `${e.self_id}:${e.group_id || e.channel_id || 'private'}:${e.sender?.openid || e.openid || e.raw?.operator_id || e.user_id || ''}`
+    const now = Date.now()
+    if (now - (invalidButtonNotices.get(key) || 0) < INVALID_BUTTON_NOTICE_TTL) return false
+    invalidButtonNotices.set(key, now)
+    if (invalidButtonNotices.size > 500) {
+      for (const [item, time] of invalidButtonNotices) {
+        if (now - time >= INVALID_BUTTON_NOTICE_TTL) invalidButtonNotices.delete(item)
+      }
+    }
+    return true
   }
 
   /** 官机回调不一定带 group/friend 转发对象，不能依赖 makeForwardMsg。 */

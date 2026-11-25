@@ -5,6 +5,7 @@ import { parse } from 'yaml'
 
 const callbacks = new Map()
 const TTL = 20 * 60 * 1000
+const EXPIRED_RETENTION = 60 * 60 * 1000
 const MAX_CALLBACKS = 1500
 const PREFIX = '#JLPM:'
 
@@ -33,11 +34,12 @@ export function isOfficialQQBot(e) {
 
 /** 使用 SDK 身份，不把 toQQUin 映射后的数字 QQ 与原生 openid 混用。 */
 function callbackOwner(e) {
-  const raw = e?.sender?.openid || e?.openid || e?.raw?.operator_id || e?.sender?.raw_user_id
+  const raw = e?.sender?.openid || e?.sender?.user_openid || e?.openid || e?.raw?.operator_id || e?.sender?.raw_user_id
   if (raw) return { id: String(raw), stable: true }
   const id = String(e.user_id)
   const prefix = `${e.self_id}${e?.bot?.adapter?.sep || ':'}`
-  return id.startsWith(prefix) ? { id: id.slice(prefix.length), stable: true } : { id, stable: false }
+  if (id.startsWith(prefix)) return { id: id.slice(prefix.length), stable: true }
+  return { id, stable: !/^\d+$/.test(id) }
 }
 
 function contextKey(e) {
@@ -67,45 +69,76 @@ export function installationModal(name, uninstall = false) {
 export function callbackButton(e, text, action, options = {}) {
   const route = getInstallerRoute(e)
   if (!route || !e.isMaster) return null
+  const owner = callbackOwner(e)
   const now = Date.now()
-  for (const [key, value] of callbacks) if (value.expires <= now) callbacks.delete(key)
+  for (const [key, value] of callbacks) if (value.expires + EXPIRED_RETENTION <= now) callbacks.delete(key)
   while (callbacks.size >= MAX_CALLBACKS) callbacks.delete(callbacks.keys().next().value)
   const token = randomBytes(12).toString('hex')
-  callbacks.set(token, { action, stableOwner: callbackOwner(e).stable, authorizedMaster: true, scope: contextKey(e), bridge: route.type === 'bridge' ? route : null, expires: now + TTL })
+  callbacks.set(token, {
+    action,
+    ownerId: owner.stable ? owner.id : '',
+    ownerStable: owner.stable,
+    self: String(e.self_id),
+    scope: contextKey(e),
+    bridge: route.type === 'bridge' ? route : null,
+    expires: now + TTL
+  })
   const data = `${PREFIX}${token}`
   return {
     text, clicked_text: text, callback: data,
     type: 1,
-    // 不将框架 user_id 传给客户端指定用户权限（私聊可能是映射 QQ 号或带前缀 ID）。
-    // 客户端允许触发，服务端以按钮创建时已验证的主人 openid 与会话严格校验。
     // 强制原生 interaction 回调，避免 QQBot 的 toCallback=false 将其变为发消息按钮。
     // button_data 由 QQBot 适配器还原为内部回调入口；不会发送聊天指令。
-    QQBot: { action: { type: 1, data, enter: false, reply: false } },
+    QQBot: {
+      action: {
+        type: 1,
+        data,
+        unsupport_tips: '请发送 #插件列表 或 #搜索插件',
+        enter: false,
+        reply: false
+      }
+    },
     style: options.style ?? 0,
     ...(options.installName ? { modal: installationModal(options.installName) } : {}),
     ...(options.uninstallName ? { modal: installationModal(options.uninstallName, true) } : {})
   }
 }
 
-export function resolveInstallerCallback(e) {
-  if ((e?.bot?.adapter?.name || e?.adapter_name) !== 'QQBot' || e.sub_type !== 'callback') return null
+
+export function inspectInstallerCallback(e) {
+  const deny = reason => ({ allowed: false, action: null, reason })
+  if ((e?.bot?.adapter?.name || e?.adapter_name) !== 'QQBot' || e.sub_type !== 'callback') return deny('invalid')
   const match = /^#JLPM:([a-f0-9]{24})$/.exec(e.msg || '')
-  if (!match) return null
+  if (!match) return deny('invalid')
   const record = callbacks.get(match[1])
-  if (!record) return null
-  if (record.expires <= Date.now()) {
-    callbacks.delete(match[1])
-    return null
-  }
+
+  if (!record) return deny('invalid')
+
   if (record.bridge) {
-    if (!e.isMaster || String(e.self_id) !== record.bridge.self || String(e.group_id) !== record.bridge.group) return null
-  } else {
-    if (record.scope !== contextKey(e)) return null
-    if (!e.isMaster && !(record.authorizedMaster && record.stableOwner && callbackOwner(e).stable)) return null
+    if (!e.isMaster || String(e.self_id) !== record.bridge.self || String(e.group_id) !== record.bridge.group) return deny('foreign')
+  } else if (!isButtonOwner(record, e)) {
+
+    return deny('foreign')
   }
+
+  if (record.expires <= Date.now()) return deny('expired')
   // 安装和卸载按钮只执行一次，防止连点重复操作。
   if (['install', 'uninstall'].includes(record.action.type)) callbacks.delete(match[1])
-  return record.action
+  return { allowed: true, action: record.action, reason: 'ok' }
+}
+
+function isButtonOwner(record, e) {
+  if (String(e.self_id) !== record.self) return false
+  if (record.ownerStable) {
+    const clicker = callbackOwner(e)
+    return clicker.stable && clicker.id === record.ownerId
+  }
+  return record.scope === contextKey(e)
+}
+
+/** 兼容旧调用：只返回 action 或 null。 */
+export function resolveInstallerCallback(e) {
+  return inspectInstallerCallback(e).action
 }
 
 export function managerMenu(e) {
