@@ -45,9 +45,9 @@ function contextKey(e) {
 }
 
 /** 腾讯 botgo Modal 约束：正文最多40字符、无URL；按钮文字最多4字符。 */
-export function installationModal(name) {
-  const prefix = '安装「'
-  const suffix = '」？将下载插件并安装依赖。'
+export function installationModal(name, uninstall = false) {
+  const prefix = uninstall ? '卸载「' : '安装「'
+  const suffix = uninstall ? '」？将删除插件目录。' : '」？将下载插件并安装依赖。'
   const budget = 40 - prefix.length - suffix.length
   const label = String(name || '此插件')
     .replace(/https?:\/\/\S+|www\.\S+/gi, '')
@@ -61,7 +61,7 @@ export function installationModal(name) {
     short += char
   }
   if (short !== label) short += '…'
-  return { content: `${prefix}${short}${suffix}`, confirm_text: '安装', cancel_text: '取消' }
+  return { content: `${prefix}${short}${suffix}`, confirm_text: uninstall ? '卸载' : '安装', cancel_text: '取消' }
 }
 
 export function callbackButton(e, text, action, options = {}) {
@@ -82,7 +82,8 @@ export function callbackButton(e, text, action, options = {}) {
     // button_data 由 QQBot 适配器还原为内部回调入口；不会发送聊天指令。
     QQBot: { action: { type: 1, data, enter: false, reply: false } },
     style: options.style ?? 0,
-    ...(options.installName ? { modal: installationModal(options.installName) } : {})
+    ...(options.installName ? { modal: installationModal(options.installName) } : {}),
+    ...(options.uninstallName ? { modal: installationModal(options.uninstallName, true) } : {})
   }
 }
 
@@ -102,8 +103,8 @@ export function resolveInstallerCallback(e) {
     if (record.scope !== contextKey(e)) return null
     if (!e.isMaster && !(record.authorizedMaster && record.stableOwner && callbackOwner(e).stable)) return null
   }
-  // 安装按钮只执行一次，防止连点重复启动 clone / pnpm。
-  if (record.action.type === 'install') callbacks.delete(match[1])
+  // 安装和卸载按钮只执行一次，防止连点重复操作。
+  if (['install', 'uninstall'].includes(record.action.type)) callbacks.delete(match[1])
   return record.action
 }
 
@@ -124,12 +125,22 @@ export function listButtons(e, page, total) {
   return [...(navigation.length ? [navigation] : []), ...managerMenu(e)]
 }
 
-export function installedButtons(e, page, total) {
-  if (!isOfficialQQBot(e)) return []
+export function installedButtons(e, data, entries, protectedPlugins) {
+  if (!e.isMaster || !isOfficialQQBot(e)) return []
+  const { page, pages: total, start, end } = data
+  const buttons = entries.slice(start - 1, end).flatMap((item, index) => {
+    if (protectedPlugins.includes(item.pathname)) return []
+    return [callbackButton(e, `卸载 ${data.plugins[index].number}`,
+      { type: 'uninstall', name: item.pathname },
+      { style: 1, uninstallName: item.pathname }
+    )]
+  })
+  const rows = []
+  for (let i = 0; i < buttons.length; i += 2) rows.push(buttons.slice(i, i + 2))
   const navigation = []
   if (page > 1) navigation.push(callbackButton(e, '上一页', { type: 'installed', page: page - 1 }))
   if (page < total) navigation.push(callbackButton(e, '下一页', { type: 'installed', page: page + 1 }))
-  return [...(navigation.length ? [navigation] : []), ...managerMenu(e)]
+  return [...rows, ...(navigation.length ? [navigation] : []), ...managerMenu(e)]
 }
 
 export function searchButtons(e, data, result, keyword) {

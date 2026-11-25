@@ -242,6 +242,7 @@ export class PluginManager extends plugin {
       case 'installed': return this.showInstalledPlugins({ ...request, msg: `#已安装插件${action.page || 1}` })
       case 'search': return this.searchPlugin({ ...request, msg: `#搜索插件${action.keyword}` }, action.page)
       case 'install': return this.installPluginFromUrl({ ...request, msg: `#安装插件 ${action.url}` })
+      case 'uninstall': return this.uninstallPlugin({ ...request, msg: `#卸载插件 ${action.name}` })
       case 'help': return this.installerHelp(request)
       default: return false
     }
@@ -713,9 +714,9 @@ export class PluginManager extends plugin {
           user_id: e.self_id, message: `${item.pluginname}\n目录：${item.pathname}\n${item.describe}\n#卸载插件 ${item.pathname}`
         }))
         await this.sendManagerEntries(e, rows)
-        return replyWithInstallerButtons(e, `已安装插件 · 第 ${page}/${total} 页`, installedButtons(e, page, total))
+        return replyWithInstallerButtons(e, `已安装插件 · 第 ${page}/${total} 页`, installedButtons(e, data, entries, CONFIG.protectedPlugins))
       }
-      return replyWithInstallerButtons(e, image, installedButtons(e, page, total))
+      return replyWithInstallerButtons(e, image, installedButtons(e, data, entries, CONFIG.protectedPlugins))
 
     } catch (error) {
       logger.error(`[插件管理器] 获取已安装插件失败: ${error.message}`)
