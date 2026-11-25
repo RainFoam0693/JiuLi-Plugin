@@ -1,19 +1,19 @@
-import MarkdownIt from 'markdown-it'
+/**
+ * 有点看不懂此插件逻辑QWQ
+ *
+ */
 
-const markdown = new MarkdownIt({ html: false })
-export const INDEX_REPOSITORY = 'https://gitee.com/yhArcadia/Yunzai-Bot-plugins-index'
-export const INDEX_FILES = ['Function-Plugin.md', 'Game-Plugin.md', 'WordGame-Plugin.md']
-const categories = ['功能类', '游戏 IP 类', '文游类']
+
+
+import { fetchPluginSources } from './PluginApi.js'
+
+const CACHE_TTL = 10 * 60 * 1000
+const RETRY_TTL = 60 * 1000
+const DESCRIPTION_LIMIT = 140
 let cache = null
 let pending = null
 let retryAfter = 0
 
-function inline(cell) {
-  return markdown.parseInline(cell, {})[0]?.children || []
-}
-function text(cell) {
-  return inline(cell).filter(t => ['text', 'code_inline', 'image'].includes(t.type)).map(t => t.content).join('').replace(/<[^>]*>/g, '').trim()
-}
 export function repositoryUrl(value) {
   const url = new URL(value)
   if (url.protocol !== 'https:' || url.username || url.password || !['github.com', 'gitee.com', 'gitcode.com', 'gitcode.net'].includes(url.hostname)) throw new Error('请提供 GitHub / Gitee / GitCode 的 HTTPS 仓库地址')
@@ -24,57 +24,68 @@ export function repositoryUrl(value) {
   return { url: `https://${url.hostname}/${parts[0]}/${name}`, pathname: name }
 }
 
-export function parsePluginMarkdown(source, category = '') {
-  const entries = []
-  for (const line of source.split(/\r?\n/)) {
-    if (!line.trim().startsWith('|')) continue
-    const cells = line.trim().replace(/^\|/, '').replace(/\|$/, '').split(/(?<!\\)\|/).map(s => s.replace(/\\\|/g, '|').trim())
-    if (cells.length < 3) continue
-    const tokens = inline(cells[0])
-    const link = tokens.find(t => t.type === 'link_open')?.attrGet('href')
-    if (!link) continue
-    try {
-      const repo = repositoryUrl(link)
-      const pluginname = text(cells[0])
-      const aliases = [...pluginname.matchAll(/[（(]([\w.@-]+)[）)]/g)].map(m => m[1])
-      entries.push({ ...repo, pluginname, aliases, author: text(cells[1]), describe: text(cells.slice(2).join(' | ')), category })
-    } catch { /* 非仓库链接不作为可安装条目。 */ }
+function safeRepository(value) {
+  try {
+    return repositoryUrl(value).url
+  } catch {
+    return ''
   }
-  return entries
 }
 
-/** 直接读取三个 Markdown 原文；不使用插件列表或仓库搜索 API。 */
+/** 接口条目统一成安装与卡片使用的字段。 */
+function parseApiEntries(records) {
+  const entries = []
+  for (const { item, source } of records) {
+    try {
+      const repo = repositoryUrl(item.url || item.html_url || item.clone_url)
+      const pluginname = String(item.name || item.pluginname || item.repo || repo.pathname).trim()
+      const owner = String(item.owner || item.author || '').trim()
+      const aliases = [...pluginname.matchAll(/[（(]([\w.@-]+)[）)]/g)].map(match => match[1])
+      if (item.repo) aliases.push(String(item.repo))
+      if (owner && item.repo) aliases.push(`${owner}/${item.repo}`)
+      const describe = String(item.description || item.describe || '').trim()
+      const clone = safeRepository(item.clone_url)
+      entries.push({
+        ...repo,
+        pluginname,
+        aliases,
+        author: owner,
+        // 接口简介通常很长，截断后保持原版卡片的高度。
+        describe: describe.length > DESCRIPTION_LIMIT ? `${describe.slice(0, DESCRIPTION_LIMIT)}…` : describe,
+        category: item.category?.name || String(item.category || source),
+        clone_url: clone ? `${clone}.git` : '',
+        mirrors: (Array.isArray(item.mirrors) ? item.mirrors : []).map(safeRepository).filter(Boolean)
+      })
+    } catch { /* 地址不规范的条目跳过 */ }
+  }
+  return [...new Map(entries.map(entry => [entry.url.toLowerCase(), entry])).values()]
+}
+
+/** 只读接口：缓存 10 分钟；刷新失败时使用上次缓存，没有缓存则报错。 */
 export async function fetchPluginIndex(fetcher = globalThis.fetch) {
-  if (cache && Date.now() < Math.max(cache.time + 10 * 60 * 1000, retryAfter)) return cache.entries
+  if (cache && Date.now() < Math.max(cache.time + CACHE_TTL, retryAfter)) return cache.entries
   if (pending) return pending
   pending = (async () => {
     try {
-      const results = await Promise.allSettled(INDEX_FILES.map(async (file, i) => {
-        const controller = new AbortController()
-        const timer = setTimeout(() => controller.abort(), 20000)
-        try {
-          const response = await fetcher(`${INDEX_REPOSITORY}/raw/main/${file}`, { signal: controller.signal })
-          if (!response.ok) throw new Error(`${file} HTTP ${response.status}`)
-          const entries = parsePluginMarkdown(await response.text(), categories[i])
-          if (!entries.length) throw new Error(`${file} 未解析到插件条目`)
-          return entries
-        } finally { clearTimeout(timer) }
-      }))
-      const groups = results.map(result => {
-        if (result.status === 'rejected') throw result.reason
-        return result.value
-      })
-      const entries = [...new Map(groups.flat().map(item => [item.url.toLowerCase(), item])).values()]
+      const entries = parseApiEntries(await fetchPluginSources(fetcher))
+      if (!entries.length) throw new Error('接口没有可安装的插件')
       cache = { time: Date.now(), entries }
       return entries
     } catch (error) {
       if (cache) {
-        retryAfter = Date.now() + 60 * 1000
-        globalThis.logger?.warn(`[插件管理器] 索引刷新失败，使用上次缓存：${error.message}`)
+        retryAfter = Date.now() + RETRY_TTL
+        globalThis.logger?.warn(`[插件管理器] 插件接口不可用，使用上次缓存：${error.message}`)
         return cache.entries
       }
       throw new Error(`读取插件索引失败：${error.message}`)
     }
   })()
   try { return await pending } finally { pending = null }
+}
+
+/** 清空缓存，下次读取重新请求接口。 */
+export function clearPluginIndexCache() {
+  cache = null
+  pending = null
+  retryAfter = 0
 }

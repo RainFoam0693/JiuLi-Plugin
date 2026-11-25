@@ -8,7 +8,7 @@ import { publicCloneProxy } from '../Model/CloneProxy.js'
 import { buildSearchPages, buildMarketPage, buildInstalledPage } from '../Model/PluginSearch.js'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import { randomUUID } from 'node:crypto'
-import { isOfficialQQBot, resolveInstallerCallback, managerMenu, listButtons, installedButtons, searchButtons, replyWithInstallerButtons } from '../Model/InstallerButtons.js'
+import { isOfficialQQBot, resolveInstallerCallback, listButtons, installedButtons, searchButtons, replyWithInstallerButtons } from '../Model/InstallerButtons.js'
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -182,7 +182,7 @@ export class PluginManager extends plugin {
   constructor () {
     super({
       name: '插件管理器',
-      dsc: '基于 Markdown 索引的插件安装与管理',
+      dsc: '基于Yunzai社区Git收录接口的安装与管理',
       event: 'message',
       priority: -1,
       rule: [
@@ -267,130 +267,167 @@ export class PluginManager extends plugin {
       '插件安装器\n#搜索插件关键词：查找插件\n#插件列表：查看市场\n#已安装插件：查看本地插件\n#切换ssh克隆 / #切换https克隆：切换默认克隆方式\n#安装插件名称或仓库地址：安装插件\n官机可点击搜索卡片下的安装按钮，按钮仅当前主人可用，20 分钟后失效。')
   }
 
-  /* ================= 插件列表识别与安装逻辑 ================= */
+  /* ================= 安装插件 ================= */
 
   /**
-   * 处理 #安装插件 [名字]
-   * 逻辑：从三个 Markdown 索引识别插件名，并自动处理私库认证
+   * 方式一：#安装插件 名称[,分支]
+   * 名称可以是目录名、插件名、作者/仓库或别名。
    */
   async installPluginByName(e) {
     if (!this.checkPermission(e)) return false
 
     try {
-      // 获取指令中的插件名和可选分支：插件名,分支名
-      const { target: name, branch, hasSeparator } = this.parseInstallInput(
-        e.msg.replace(/#安装插件/, '').trim()
-      )
-
+      const { target: name, branch, hasSeparator } = this.parseInstallInput(e.msg.replace(/#安装插件/, ''))
       if (!name) return e.reply('请提供插件名称或 Git 链接')
-      // 零宽字符可能使地址规则未命中；规范化后重新交给 URL 安装逻辑。
-      if (/^(https?:\/\/|git@)/.test(name)) {
+      // 名称位置直接贴了地址时，交给地址安装。
+      if (this.looksLikeUrl(name)) {
         return this.installPluginFromUrl({ ...e, msg: `#安装插件 ${name}${hasSeparator ? `,${branch}` : ''}` })
       }
-      if (hasSeparator && !branch) return e.reply('请在逗号后提供要克隆的分支名称')
-      if (/[\x00-\x1F\x7F]/.test(branch)) return e.reply('分支名称不能包含控制字符')
+      const inputError = this.validateBranch(branch, hasSeparator)
+      if (inputError) return e.reply(inputError)
 
-      // 1. 获取远程插件列表
-      const list = await this.fetchPluginList()
-
-      // 2. 检查插件名是否存在（支持 pathname 或 pluginname 匹配）
-      const target = list.find(i => [i.pathname, i.pluginname, ...(i.aliases || [])].some(value => value.toLowerCase() === name.toLowerCase()))
-
-      if (!target) {
-          return await e.reply(`市场中未找到插件：${name}`)
-      }
-
-      // 3. 构造安装指令分发给 URL安装逻辑
-      e.msg = `#安装插件 ${target.url}`
-      return await this.installPluginFromUrl(e, branch)
+      const entry = this.findPlugin(await this.fetchPluginList(), name)
+      if (!entry) return e.reply(`市场中未找到插件：${name}`)
+      return this.installPluginEntry(e, entry, branch)
     } catch (error) {
       logger.error(`[插件管理器] 安装插件失败: ${error.message}`)
       return e.reply(`安装插件时发生错误: ${error.message}`)
     }
   }
 
+  /**
+   * 方式二：#安装插件 仓库地址[,分支]
+   */
   async installPluginFromUrl(e, branch = null) {
     if (!this.checkPermission(e)) return false
 
     try {
-      const input = e.msg.replace(/#安装插件/, '').trim()
-      let rawUrl = input
-      let effectiveBranch = branch || ''
-
-      // 直接通过 URL 安装时，从地址末尾解析可选分支；名称安装已显式传入 branch。
+      let input = e.msg.replace(/#安装插件/, '').trim()
+      let effectiveBranch = branch ?? ''
       if (branch === null) {
         const parsed = this.parseInstallInput(input)
-        rawUrl = parsed.target
+        input = parsed.target
         effectiveBranch = parsed.branch
-
-        if (parsed.hasSeparator && !effectiveBranch) {
-          return e.reply('请在逗号后提供要克隆的分支名称')
-        }
+        const inputError = this.validateBranch(effectiveBranch, parsed.hasSeparator)
+        if (inputError) return e.reply(inputError)
       }
 
-      if (/[\x00-\x1F\x7F]/.test(effectiveBranch)) {
-        return e.reply('分支名称不能包含控制字符')
-      }
-
-      checkConfigFileChanges()
-      const ssh = /^git@([^:]+):(.+)$/.exec(rawUrl)
-      const validated = repositoryUrl(ssh ? `https://${ssh[1]}/${ssh[2]}` : rawUrl)
-      // 统一按锅巴选择的协议构造地址，名称安装和粘贴地址使用同一配置。
-      const repository = new URL(validated.url)
-      rawUrl = CONFIG.cloneProtocol === 'ssh'
-        ? `git@${repository.hostname}:${repository.pathname.slice(1)}.git`
-        : `${validated.url}.git`
-      const cleanUrl = validated.url
-      const pluginName = this.extractPluginNameFromUrl(cleanUrl)
-      const targetPath = path.join(CONFIG.pluginsDir, pluginName)
-
-      if (fs.existsSync(targetPath)) {
-        return e.reply(`[${pluginName}] 已存在`)
-      }
-
-      let finalUrl = rawUrl
-      const host = repository.hostname === 'gitcode.net' ? 'gitcode.com' : repository.hostname
-      const auth = getAuthConfig()[host] || {}
-      const access = await detectRepositoryAccess(cleanUrl, auth)
-      if (access === 'authenticated') {
-        finalUrl = this.buildOAuth2AuthUrl(`${cleanUrl}.git`)
-        if (!finalUrl) return e.reply('仓库需要认证，请先在锅巴中配置对应平台的用户名和访问令牌')
-        await e.reply('该仓库需要认证，已自动切换为 HTTPS，使用已配置的用户名和令牌。')
-      }
-
-      const proxyUrl = publicCloneProxy(`${cleanUrl}.git`, CONFIG, access)
-      if (proxyUrl) {
-        finalUrl = proxyUrl
-        await e.reply('公开仓库使用 HTTPS 反代克隆。')
-      }
-
-      await e.reply(effectiveBranch
-        ? `[${pluginName}] 开始下载分支 ${effectiveBranch}...`
-        : `[${pluginName}] 开始下载...`)
-      let result = await this.gitClone(finalUrl, targetPath, effectiveBranch)
-
-      // 访问性无法确认且首次克隆失败时，允许使用已配置令牌做一次 HTTPS 重试。
-      if (result.error && access === 'unknown' && auth.token && auth.token !== '秘钥') {
-        const authUrl = this.buildOAuth2AuthUrl(`${cleanUrl}.git`)
-        if (authUrl) {
-          await e.reply('首次克隆失败，尝试已配置的 HTTPS 认证；这不代表已确认仓库为私库。')
-          result = await this.gitClone(authUrl, targetPath, effectiveBranch)
-        }
-      }
-
-      if (result.error) {
-        return e.reply(`安装失败：\n${this.maskSecret(result.stderr || result.error.message)}`)
-      }
-
-      if (proxyUrl) {
-        const restored = await this.runCommand('git', ['remote', 'set-url', 'origin', `${cleanUrl}.git`], { cwd: targetPath })
-        if (restored.error) return e.reply(`[${pluginName}] 已下载，但设置平台原始远端地址失败，请检查 Git 配置权限后再安装依赖。`)
-      }
-      return await this.installDependencies(pluginName, e)
+      const ssh = /^git@([^:]+):(.+)$/.exec(input)
+      const repo = repositoryUrl(ssh ? `https://${ssh[1]}/${ssh[2]}` : input)
+      // 地址安装查一次索引，拿到接口提供的镜像；索引不可用时直接下载。
+      const entry = await this.findPluginByUrl(repo.url)
+      return this.installPluginEntry(e, entry || { url: repo.url }, effectiveBranch)
     } catch (error) {
       logger.error(`[插件管理器] 从URL安装插件失败: ${error.message}`)
       return e.reply(`安装插件时发生错误: ${error.message}`)
     }
+  }
+
+  /** 两种安装方式共用：校验目录 → 准备地址 → 下载 → 校正 origin → 安装依赖。 */
+  async installPluginEntry(e, entry, branch = '') {
+    checkConfigFileChanges()
+    const repo = repositoryUrl(entry.url)
+    const name = repo.pathname
+    const targetPath = path.join(CONFIG.pluginsDir, name)
+    if (fs.existsSync(targetPath)) return e.reply(`[${name}] 已存在`)
+
+    const canonical = this.cloneUrl(repo)
+    const sources = await this.cloneSources(repo, entry)
+    const label = entry.pluginname || name
+    await e.reply(`[${label}] 开始下载${branch ? `分支 ${branch}` : ''}...`)
+
+    const result = await this.cloneWithFallback(e, sources, targetPath, branch)
+    if (result.error) {
+      return e.reply(`安装失败：\n${this.maskSecret(result.stderr || result.error.message)}`)
+    }
+
+    // 认证、反代、镜像地址只用于下载，origin 一律改回平台规范地址。
+    if (result.used !== canonical) {
+      const restored = await this.runCommand('git', ['remote', 'set-url', 'origin', canonical], { cwd: targetPath })
+      if (restored.error) return e.reply(`[${name}] 已下载，但设置平台原始远端地址失败，请检查 Git 配置权限后再安装依赖。`)
+    }
+    return this.installDependencies(name, e)
+  }
+
+  /** 按锅巴设置生成主地址；SSH 使用 git@ 形式。 */
+  cloneUrl(repo) {
+    const url = new URL(repo.url)
+    return CONFIG.cloneProtocol === 'ssh'
+      ? `git@${url.hostname}:${url.pathname.slice(1)}.git`
+      : `${repo.url}.git`
+  }
+
+  /** 依次准备：私库认证地址 / 普通地址 / 认证重试 / 接口镜像。 */
+  async cloneSources(repo, entry) {
+    const clean = `${repo.url}.git`
+    const hostname = new URL(repo.url).hostname
+    const host = hostname === 'gitcode.net' ? 'gitcode.com' : hostname
+    const auth = getAuthConfig()[host] || {}
+    let access = 'unknown'
+    try {
+      access = await detectRepositoryAccess(repo.url, auth)
+    } catch (error) {
+      logger.warn(`[插件管理器] 无法探测仓库权限：${error.message}`)
+    }
+
+    const sources = []
+    if (access === 'authenticated') {
+      const authUrl = this.buildOAuth2AuthUrl(clean)
+      if (!authUrl) throw new Error('仓库需要认证，请先在锅巴中配置对应平台的用户名和访问令牌')
+      sources.push(authUrl)
+    } else {
+      const proxyUrl = publicCloneProxy(clean, CONFIG, access)
+      sources.push(proxyUrl || (CONFIG.cloneProtocol === 'ssh' ? this.cloneUrl(repo) : (entry.clone_url || clean)))
+      if (access === 'unknown' && auth.token && auth.token !== '秘钥') {
+        const authUrl = this.buildOAuth2AuthUrl(clean)
+        if (authUrl) sources.push(authUrl)
+      }
+    }
+    for (const mirror of entry.mirrors || []) sources.push(`${mirror}.git`)
+    return [...new Set(sources)]
+  }
+
+  /** 按顺序下载，失败后清理半成品目录换下一个来源。 */
+  async cloneWithFallback(e, sources, targetPath, branch) {
+    let result = { error: new Error('没有可用的克隆地址') }
+    for (let index = 0; index < sources.length; index++) {
+      result = await this.gitClone(sources[index], targetPath, branch)
+      if (!result.error) return { ...result, used: sources[index] }
+      if (index < sources.length - 1) {
+        await e.reply('克隆失败，正在尝试下一个来源...')
+        if (fs.existsSync(targetPath)) fs.rmSync(targetPath, { recursive: true, force: true })
+      }
+    }
+    return result
+  }
+
+  /** 名称匹配：目录名、插件名、作者/仓库、别名，忽略大小写。 */
+  findPlugin(list, name) {
+    const key = name.toLowerCase()
+    return list.find(item => [item.pathname, item.pluginname, ...(item.aliases || [])]
+      .some(value => String(value || '').toLowerCase() === key)) || null
+  }
+
+  /** 按地址找接口条目，用于补充镜像；索引不可用时返回 null。 */
+  async findPluginByUrl(url) {
+    try {
+      const list = await this.fetchPluginList()
+      return list.find(item => item.url.toLowerCase() === url.toLowerCase()) || null
+    } catch (error) {
+      logger.warn(`[插件管理器] 索引不可用，直接按地址安装：${error.message}`)
+      return null
+    }
+  }
+
+  /** 安装输入校验：逗号后必须有分支，分支不能带控制字符。 */
+  validateBranch(branch, hasSeparator) {
+    if (hasSeparator && !branch) return '请在逗号后提供要克隆的分支名称'
+    if (/[\x00-\x1F\x7F]/.test(branch)) return '分支名称不能包含控制字符'
+    return ''
+  }
+
+  looksLikeUrl(value) {
+    return /^(https?:\/\/|git@)/.test(value)
   }
 
   /* ================= 工具函数 ================= */
@@ -417,20 +454,6 @@ export class PluginManager extends plugin {
       return false
     }
     return true
-  }
-
-  /**
-   * 从URL中提取插件名
-   */
-  extractPluginNameFromUrl(url) {
-    return url.split('/').pop().replace(/\.git$/, '')
-  }
-
-  /**
-   * 检查是否为私库链接
-   */
-  isPrivateRepo(url) {
-    return /gitcode\.(com|net)|github\.com|gitee\.com/i.test(url)
   }
 
   /**
@@ -1115,7 +1138,7 @@ export class PluginManager extends plugin {
     await e.reply(msg)
   }
 
-  /** 平台搜索也只筛选 Markdown 索引中的仓库。 */
+  /** 平台搜索只筛选接口索引中的仓库。 */
   async searchGitHub(query) {
     return this.searchIndexedRepositories(query, 'github.com')
   }

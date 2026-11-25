@@ -217,7 +217,7 @@ python -c "from jmcomic import JmOption; print('jmcomic OK')"
 
 ## 插件安装器
 
-插件列表直接读取 [Yunzai-Bot-plugins-index](https://gitee.com/yhArcadia/Yunzai-Bot-plugins-index) 的 `Function-Plugin.md`、`Game-Plugin.md` 和 `WordGame-Plugin.md`，不使用插件列表接口或平台仓库搜索 API。索引缓存 10 分钟，刷新失败时使用已有内存缓存。
+读取三个API接口：功能插件 `https://git.yzai.top/api.php?action=function_plugins`、游戏插件 `https://git.yzai.top/api.php?action=game_plugins`、文游插件 `https://git.yzai.top/api.php?action=word_game_plugins`，转换成统一字段后展示与安装。索引缓存 10 分钟；刷新失败时使用上次缓存，没有缓存则直接提示读取失败。要换接口请修改 `Model/PluginApi.js` 顶部 `PLUGIN_SOURCES` 的地址即可。
 
 | 指令 | 用途 |
 | :--- | :--- |
