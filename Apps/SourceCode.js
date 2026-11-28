@@ -82,7 +82,6 @@ export class SourceCode extends plugin {
     if (rows) {
       fData = fData.split("\n").slice(rows[0] - 1, rows[1]).join("\n")
     }
-    console.log(fData);
     const SourceCode = fData
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
