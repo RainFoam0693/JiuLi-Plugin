@@ -245,7 +245,13 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
     if (Code.length) {
       Code = await ansi_up.ansi_to_html(Code.join("\n\n"))
-      const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, deviceScaleFactor: 3, baidu_latency: baiduLatency })
+      const { name, version } = getYunzaiVersion()
+      const img = await puppeteer.screenshot("Code", {
+        tplFile, htmlDir, Code,
+        cmd: this.e.msg.split(/\s/, 1)[0].match(/^[dmf]mp?/)?.[0] || "消息发送",
+        yunzai_name: name, yunzai_version: version,
+        deviceScaleFactor: 3, baidu_latency: baiduLatency
+      })
       this.reply(img, true)
     }
     return rets
