@@ -1,10 +1,9 @@
+import { codeCardData } from "../Model/CardData.js"
 import puppeteer from "../../../lib/puppeteer/puppeteer.js"
 import { AnsiUp } from "ansi_up"
 import { getBaiduLatency } from "../Model/latency.js"
 const ansi_up = new AnsiUp
 
-const htmlDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/Code/`
-const tplFile = `${htmlDir}Code.html`
 const errorTips = "未使用脚本安装，此功能出错属于正常情况\n请参阅 JiuLi-Plugin 的 README.md"
 
 let cmd = "fastfetch"
@@ -45,53 +44,45 @@ export class SystemInfo extends plugin {
     })
   }
 
-  async SystemInfo(e) {
-    const ret = await Bot.exec(cmd)
-
+  async sendCommandResult(command, label, asImage) {
+    const ret = await Bot.exec(command)
     if (ret.error) {
-      logger.error(`系统信息错误：${logger.red(ret.error)}`)
-      await this.reply(`系统信息错误：${ret.error}`, true)
+      logger.error(`${label}错误：${logger.red(ret.error)}`)
+      await this.reply(`${label}错误：${ret.error}`, true)
       await this.reply(errorTips)
+      return
     }
 
-    await this.reply(ret.stdout.trim(), true)
-  }
-
-  async SystemInfoPic(e) {
-    const baiduLatency = await getBaiduLatency()
-    const ret = await Bot.exec(cmds)
-
-    if (ret.error) {
-      logger.error(`系统信息错误：${logger.red(ret.error)}`)
-      await this.reply(`系统信息错误：${ret.error}`, true)
-      await this.reply(errorTips)
+    const output = ret.stdout.trim()
+    if (!asImage) {
+      await this.reply(output, true)
+      return
     }
 
-    const Code = await ansi_up.ansi_to_html(ret.stdout.trim())
-    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd, baidu_latency: baiduLatency })
+    const data = codeCardData(command, ansi_up.ansi_to_html(output), await getBaiduLatency())
+    const img = await puppeteer.screenshot("Code", data)
     await this.reply(img, true)
   }
 
-  async SystemBench(e) {
-    const baiduLatency = await getBaiduLatency()
+  async SystemInfo() {
+    await this.sendCommandResult(cmd, "系统信息", false)
+  }
+
+  async SystemInfoPic() {
+    await this.sendCommandResult(cmds, "系统信息", true)
+  }
+
+  async SystemBench() {
     if (Running) {
       await this.reply("正在测试，请稍等……", true)
       return false
     }
     Running = true
-    await this.reply("开始测试，请稍等……", true)
-
-    const ret = await Bot.exec(benchcmd)
-
-    if (ret.error) {
-      logger.error(`系统测试错误：${logger.red(ret.error)}`)
-      await this.reply(`系统测试错误：${ret.error}`, true)
-      await this.reply(errorTips)
+    try {
+      await this.reply("开始测试，请稍等……", true)
+      await this.sendCommandResult(benchcmd, "系统测试", true)
+    } finally {
+      Running = false
     }
-
-    const Code = await ansi_up.ansi_to_html(ret.stdout.trim())
-    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: benchcmd, baidu_latency: baiduLatency })
-    await this.reply(img, true)
-    Running = false
   }
 }

@@ -1,3 +1,4 @@
+import { codeCardData } from "../Model/CardData.js"
 import puppeteer from "../../../lib/puppeteer/puppeteer.js"
 import hljs from "@highlightjs/cdn-assets/highlight.min.js"
 import { AnsiUp } from "ansi_up"
@@ -5,25 +6,6 @@ import fs from "fs"
 import path from "path"
 import { getBaiduLatency } from "../Model/latency.js"
 const ansi_up = new AnsiUp
-
-const htmlDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/Code/`
-const tplFile = `${htmlDir}Code.html`
-
-// 获取云崽名称和版本（自动检测trss/miao/原版）
-function getYunzaiVersion() {
-  try {
-    const pkgPath = path.join(process.cwd(), 'package.json')
-    if (fs.existsSync(pkgPath)) {
-      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'))
-      const name = pkg.name || 'unknown'
-      const version = pkg.version || 'unknown'
-      // 格式化名称: trss-yunzai -> TRSS-Yunzai, miao-yunzai -> Miao-Yunzai
-      const displayName = name.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('-')
-      return { name: displayName, version }
-    }
-  } catch (e) {}
-  return { name: 'unknown', version: 'unknown' }
-}
 
 // 背景图获取（yenai state 逻辑：远程优先，失败用本地 fallback）
 function getLocalBg() {
@@ -172,10 +154,13 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
     Code = await ansi_up.ansi_to_html(Code.join("\n\n"))
 
-    const yunzaiInfo = getYunzaiVersion()
     const bgData = await getBgData()
 
-    const img = await puppeteer.screenshots("Code", { tplFile, htmlDir, Code, multiPageHeight: 20000 ,cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable: !!bgData, bgData, baidu_latency: baiduLatency })
+    const img = await puppeteer.screenshots("Code", {
+      ...codeCardData(cmd, Code, baiduLatency),
+      multiPageHeight: 20000,
+      deviceScaleFactor: 3, bgAvailable: !!bgData, bgData
+    })
     return this.reply(img, true)
   }
 
@@ -220,10 +205,12 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
     Code = await ansi_up.ansi_to_html(Code.join("\n\n"))
     Code = inspectCmd(hljs.highlight(cmd, { language: langCmd }).value, Code)
 
-    const yunzaiInfo = getYunzaiVersion()
     const bgData = await getBgData()
 
-    const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, cmd: cmd, yunzai_version: yunzaiInfo.version, yunzai_name: yunzaiInfo.name, deviceScaleFactor: 3, bgAvailable: !!bgData, bgData, baidu_latency: baiduLatency })
+    const img = await puppeteer.screenshot("Code", {
+      ...codeCardData(cmd, Code, baiduLatency),
+      deviceScaleFactor: 3, bgAvailable: !!bgData, bgData
+    })
     return this.reply(img, true)
   }
 
@@ -245,12 +232,9 @@ ${(isValue && !String(err).includes("SyntaxError: Unexpected")) ? `return (${cmd
 
     if (Code.length) {
       Code = await ansi_up.ansi_to_html(Code.join("\n\n"))
-      const { name, version } = getYunzaiVersion()
+      const cmd = this.e.msg.match(/^[dmf]mp?/)?.[0] || "消息发送"
       const img = await puppeteer.screenshot("Code", {
-        tplFile, htmlDir, Code,
-        cmd: this.e.msg.split(/\s/, 1)[0].match(/^[dmf]mp?/)?.[0] || "消息发送",
-        yunzai_name: name, yunzai_version: version,
-        deviceScaleFactor: 3, baidu_latency: baiduLatency
+        ...codeCardData(cmd, Code, baiduLatency), deviceScaleFactor: 3
       })
       this.reply(img, true)
     }

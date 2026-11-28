@@ -1,11 +1,10 @@
+import { codeCardData } from "../Model/CardData.js";
 import puppeteer from "../../../lib/puppeteer/puppeteer.js";
 import { AnsiUp } from "ansi_up";
 import { getBaiduLatency } from "../Model/latency.js";
 
 const ansi_up = new AnsiUp();
 
-const htmlDir = `${process.cwd()}/plugins/JiuLi-Plugin/Resources/Code/`;
-const tplFile = `${htmlDir}Code.html`;
 const path = `${process.env.HOME}/../`;
 const cmdPath = `${path}Main.sh`;
 const errorTips = "请使用脚本安装，再使用此功能\n请参阅 JiuLi-Plugin 的 README.md";
@@ -31,13 +30,13 @@ export class Script extends plugin {
 
     if (ret.stdout) {
       const Code = await ansi_up.ansi_to_html(ret.stdout.trim());
-      const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, baidu_latency: baiduLatency });
+      const img = await puppeteer.screenshot("Code", codeCardData(e.msg, Code, baiduLatency));
       await this.reply(img, true);
     }
 
     if (ret.stderr) {
       const Code = await ansi_up.ansi_to_html(ret.stderr.trim());
-      const img = await puppeteer.screenshot("Code", { tplFile, htmlDir, Code, baidu_latency: baiduLatency });
+      const img = await puppeteer.screenshot("Code", codeCardData(e.msg, Code, baiduLatency));
       await this.reply(["标准错误输出：", img], true);
     }
 

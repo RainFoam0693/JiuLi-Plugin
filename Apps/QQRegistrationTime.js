@@ -1,5 +1,5 @@
 import fs from "node:fs/promises"
-import { existsSync, readFileSync } from "node:fs"
+import { frameworkInfo } from "../Model/CardData.js"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import puppeteer from "../../../lib/puppeteer/puppeteer.js"
@@ -58,7 +58,6 @@ export class QQRegistrationTime extends plugin {
       }
 
       try {
-        const yunzai = await getYunzaiVersion()
         const image = await puppeteer.screenshot("QQRegistrationTime", {
           tplFile,
           htmlDir,
@@ -66,8 +65,7 @@ export class QQRegistrationTime extends plugin {
           iconBase,
           bgData,
           baidu_latency: baiduLatency,
-          yunzai_name: yunzai.name,
-          yunzai_version: yunzai.version,
+          ...frameworkInfo(),
           deviceScaleFactor: 3,
           pageGotoParams: { waitUntil: "networkidle2" }
         })
@@ -121,20 +119,4 @@ async function getBgData () {
     }
   }
   return getLocalBg()
-}
-
-// 获取程序信息
-function getYunzaiVersion () {
-  try {
-    const pkgPath = path.join(process.cwd(), 'package.json')
-    if (existsSync(pkgPath)) {
-      const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'))
-      const name = pkg.name || 'unknown'
-      const version = pkg.version || 'unknown'
-      // 格式化名称: trss-yunzai -> Trss-Yunzai, miao-yunzai -> Miao-Yunzai
-      const displayName = name.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join('-')
-      return { name: displayName, version }
-    }
-  } catch (e) {}
-  return { name: 'unknown', version: 'unknown' }
 }
